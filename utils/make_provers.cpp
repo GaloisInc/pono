@@ -31,6 +31,7 @@
 #ifdef WITH_MSAT_IC3IA
 #include "engines/msat_ic3ia.h"
 #endif
+#include <engines/mus.h>
 
 #include "smt/available_solvers.h"
 
@@ -46,7 +47,8 @@ vector<Engine> all_engines()
            INTERP,
            IC3IA_ENGINE,
            #endif
-           IC3SA_ENGINE
+           IC3SA_ENGINE,
+           MUS_ENGINE
   };
 }
 
@@ -88,6 +90,8 @@ shared_ptr<Prover> make_prover(Engine e,
     return make_shared<IC3SA>(p, ts, slv, opts);
   } else if (e == SYGUS_PDR) {
     return make_shared<SygusPdr>(p, ts, slv, opts);
+  } else if (e == MUS_ENGINE) {
+    return make_shared<Mus>(p, ts, slv, opts);
   } else {
     throw PonoException("Unhandled engine");
   }

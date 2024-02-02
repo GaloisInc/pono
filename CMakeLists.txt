@@ -62,6 +62,7 @@ message("-- FOUND FLEX INCLUDE DIRS: ${FLEX_INCLUDE_DIRS}")
 #list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/smt-switch")
 
 set(SMT_SWITCH_DIR "${PROJECT_SOURCE_DIR}/deps/smt-switch")
+set(MUSTOOL_DIR "${PROJECT_SOURCE_DIR}/deps/mustool")
 
 # rely on cmake modules from smt-switch (required anyway)
 set(CMAKE_MODULE_PATH ${SMT_SWITCH_DIR}/cmake)
@@ -131,6 +132,17 @@ set(INCLUDE_DIRS
   "${CMAKE_CURRENT_BINARY_DIR}"
   "${GMP_INCLUDE_DIR}"
   "${FLEX_INCLUDE_DIRS}"
+  "${MUSTOOL_DIR}"
+  "${MUSTOOL_DIR}/core"
+  "${MUSTOOL_DIR}/tclap"
+  "${MUSTOOL_DIR}/custom_minisat"
+  "${MUSTOOL_DIR}/satSolvers"
+  "${MUSTOOL_DIR}/mcsmus/minisat/utils"
+  "${MUSTOOL_DIR}/mcsmus/minisat/core"
+  "${MUSTOOL_DIR}/mcsmus/minisat/simp"
+  "${MUSTOOL_DIR}/mcsmus/minisat/mtl"
+  "${MUSTOOL_DIR}/mcsmus/glucose/core"
+  "${MUSTOOL_DIR}/mcsmus/glucose/simp"
   )
 
 set(SOURCES
@@ -154,6 +166,7 @@ set(SOURCES
   "${PROJECT_SOURCE_DIR}/engines/interpolantmc.cpp"
   "${PROJECT_SOURCE_DIR}/engines/kinduction.cpp"
   "${PROJECT_SOURCE_DIR}/engines/mbic3.cpp"
+  "${PROJECT_SOURCE_DIR}/engines/mus.cpp"
   "${PROJECT_SOURCE_DIR}/engines/syguspdr.cpp"
   "${PROJECT_SOURCE_DIR}/frontends/btor2_encoder.cpp"
   "${PROJECT_SOURCE_DIR}/frontends/smv_encoder.cpp"
@@ -259,6 +272,7 @@ if (WITH_COREIR)
 endif()
 
 target_link_libraries(pono-lib PUBLIC "${SMT_SWITCH_DIR}/local/lib/libsmt-switch.a")
+target_link_libraries(pono-lib PUBLIC "${MUSTOOL_DIR}/libmust.a" z z3)
 target_link_libraries(pono-lib PUBLIC "${PROJECT_SOURCE_DIR}/deps/btor2tools/build/lib/libbtor2parser.a")
 target_link_libraries(pono-lib PUBLIC "${GMPXX_LIBRARIES}")
 target_link_libraries(pono-lib PUBLIC "${GMP_LIBRARIES}")
@@ -288,7 +302,19 @@ target_include_directories(pono-bin PUBLIC
   "${PROJECT_SOURCE_DIR}/contrib/"
   "${PROJECT_SOURCE_DIR}/contrib/optionparser-1.7/src"
   "${PROJECT_SOURCE_DIR}/deps/btor2tools/src"
-  "${SMT_SWITCH_DIR}/local/include")
+  "${SMT_SWITCH_DIR}/local/include"
+  "${MUSTOOL_DIR}"
+  "${MUSTOOL_DIR}/core"
+  "${MUSTOOL_DIR}/tclap"
+  "${MUSTOOL_DIR}/custom_minisat"
+  "${MUSTOOL_DIR}/satSolvers"
+  "${MUSTOOL_DIR}/mcsmus/minisat/utils"
+  "${MUSTOOL_DIR}/mcsmus/minisat/core"
+  "${MUSTOOL_DIR}/mcsmus/minisat/simp"
+  "${MUSTOOL_DIR}/mcsmus/minisat/mtl"
+  "${MUSTOOL_DIR}/mcsmus/glucose/core"
+  "${MUSTOOL_DIR}/mcsmus/glucose/simp"
+)
 
 target_link_libraries(pono-bin PUBLIC pono-lib)
 
