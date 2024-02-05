@@ -17,6 +17,9 @@ public:
 
   ProverResult check_until(int k) override;
 
+ protected:
+  smt::UnorderedTermSet extractTopLevelConjuncts(smt::Term t);
+
 };  // class Mus
 
 }  // namespace pono
