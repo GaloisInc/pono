@@ -1,6 +1,5 @@
 
 #include "mus.h"
-#include <fstream>
 
 #include "Master.h"
 
@@ -12,83 +11,78 @@ namespace pono {
     engine_ = Engine::MUS_ENGINE;
   }
 
-  Mus::~Mus() {}
+  Mus::~Mus() = default;
 
-  ProverResult Mus::check_until(int k) {
-
-    string fname = ".musQuery.smt2";
-    ofstream f;
-    f.open(fname);
-
-    auto comment = [&f](string c) {
-      f << ";" << c << std::endl;
-    };
-
-    auto assert_formula = [&f](Term t) {
-      f << "(assert " << t << ")" << std::endl;
-    };
-
-    auto declare_const = [&f](Sort s, Term t) {
-      f << "(declare-const " << t << " " << s << ")" << std::endl;
-    };
-
-    comment("input vars");
-    for (auto const & t : ts_.inputvars()) {
-      for (int i = 0; i <= k; i++) {
-        declare_const(t->get_sort(), unroller_.at_time(t, i));
-      }
+  ProverResult Mus::check_until(int k)
+  {
+    if (!solver_->get_solver_enum() == BTOR) {
+      // We rely on boolector's `dump_smt2` being implemented
+      throw invalid_argument("MUS engine requires BTOR solver");
     }
 
-    comment("state vars");
-    for (auto const & t : ts_.statevars()) {
-      for (int i = 0; i <= k; i++) {
-        declare_const(t->get_sort(), unroller_.at_time(t, i));
-      }
+    if (options_.logging_smt_solver_) {
+      // LoggingSolver's `dump_smt2` does not invoke its wrapped solver's implementation
+      throw invalid_argument("MUS engine cannot be used with a Logging Solver");
     }
 
-    comment("init");
-    for (auto const & t : extractTopLevelConjuncts(ts_.init())) {
-      assert_formula(unroller_.at_time(t, 0));
-    }
+    assertInitConstraints();
+    assertUnrolledTransConstraints(k);
+    assertUnrolledSpec(k);
 
-    comment("trans");
-    for (auto const & t : extractTopLevelConjuncts(ts_.trans())) {
-      Term _t = solver_->make_term(true);
-      for (int i = 1; i <= k; i++) {
-        _t = solver_->make_term(PrimOp::And, _t, unroller_.at_time(t, i - 1));
-      }
-      assert_formula(_t);
-    }
+    string musQueryFile = ".musquery.smt2";
+    string musOutputFile = ".muses.smt2";
 
-    comment("spec");
-    Term _t = solver_->make_term(true);
-    for (int i = 0; i <= k; i++) {
-      _t = solver_->make_term(PrimOp::And, _t, unroller_.at_time(orig_property_.prop(), i));
-    }
-    _t = solver_->make_term(PrimOp::Not, _t);
-    assert_formula(_t);
+    solver_->dump_smt2(musQueryFile);
 
-    f.close();
-
-    // MUST default to remus when alg isn't specified on CLI
-    Master musSolver(fname, "remus");
+    // MUST defaults to remus when alg isn't specified on CLI
+    Master musSolver(musQueryFile, "remus");
+    musSolver.output_file = musOutputFile;
     // TODO - this `exit(1)`s if it's SAT
     musSolver.enumerate();
 
     return ProverResult::TRUE;
   }
 
-  smt::UnorderedTermSet Mus::extractTopLevelConjuncts(Term t) {
-    std::unordered_set<Term> c;
-    Term _t = t;
-    // Cvc5 combines top-level conjuncts with `And`s, boolector uses `BVAnd`
-    while(_t->get_op() == PrimOp::And || _t->get_op() == PrimOp::BVAnd) {
-      TermIter tIter = _t->begin();
-      _t = *tIter;
-      c.insert(*++tIter);
+  void Mus::assertInitConstraints() {
+    Term t = ts_.init();
+    while(t->get_op() == PrimOp::BVAnd) {
+      TermIter tIter = t->begin();
+      t = *tIter;
+      solver_->assert_formula(unroller_.at_time(*++tIter, 0));
     }
-    c.insert(_t);
-    return c;
+    solver_->assert_formula(unroller_.at_time(t, 0));
+  }
+
+  void Mus::assertUnrolledTransConstraints(int k) {
+    UnorderedTermSet unrolledTransConjuncts;
+    Sort boolSort = solver_->make_sort(SortKind::BOOL);
+    for (auto const & stateUpdate : ts_.state_updates()) {
+      Term stateSymbol = stateUpdate.first;
+      Term tConstraint = solver_->make_term(Equal, ts_.next(stateSymbol), stateUpdate.second);
+      Term transSymbol = solver_->make_symbol("t_" + stateSymbol->to_string(), boolSort);
+      Term _t = solver_->make_term(true);
+      for (int i = 1; i <= k; i++) {
+        _t = solver_->make_term(PrimOp::And, _t, unroller_.at_time(tConstraint, i - 1));
+      }
+      unrolledTransConjuncts.insert(solver_->make_term(Equal, transSymbol, _t));
+      solver_->assert_formula(transSymbol);
+    }
+
+    Term t = solver_->make_term(true);
+    Term transSymbolsConjunction = solver_->make_symbol("_transSymbols", boolSort);
+    for (auto const & saveEqT : unrolledTransConjuncts) {
+      t = solver_->make_term(And, t, saveEqT);
+    }
+    solver_->assert_formula(solver_->make_term(Equal, transSymbolsConjunction, t));
+    solver_->assert_formula(transSymbolsConjunction);
+  }
+
+  void Mus::assertUnrolledSpec(int k) {
+    Term t = solver_->make_term(true);
+    for (int i = 0; i <= k; i++) {
+      t = solver_->make_term(PrimOp::And, t, unroller_.at_time(orig_property_.prop(), i));
+    }
+    solver_->assert_formula(solver_->make_term(PrimOp::Not, t));
   }
 
 }  // namespace pono

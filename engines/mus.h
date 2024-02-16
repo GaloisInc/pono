@@ -17,9 +17,10 @@ public:
 
   ProverResult check_until(int k) override;
 
- protected:
-  smt::UnorderedTermSet extractTopLevelConjuncts(smt::Term t);
-
+private:
+  void assertInitConstraints();
+  void assertUnrolledTransConstraints(int k);
+  void assertUnrolledSpec(int k);
 };  // class Mus
 
 }  // namespace pono
