@@ -3,7 +3,7 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 DEPS=$DIR/../deps
 
-MUST_VERSION=e12212a752c5d55ed712c4d22e3c1ecc2f78fb7f
+MUST_VERSION=aea91490e4cd25b9356c2e2dfd53f90b956f827e
 
 mkdir -p $DEPS
 
