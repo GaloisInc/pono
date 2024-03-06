@@ -178,7 +178,7 @@ namespace pono {
     boolectorInternal->assert_formula(boolectorInternal->make_term(Equal, controlledTermsSymbol, cTerm));
     boolectorInternal->assert_formula(controlledTermsSymbol);
 
-    string musQueryFile = "/home/rperoutka/.musquery.smt2";
+    string musQueryFile = ".musquery.smt2";
     string musOutputFile = ".muses.smt2";
 
     boolectorInternal->dump_smt2(musQueryFile);
