@@ -103,7 +103,7 @@ namespace pono {
         if (initConjuncts.find(c) != initConjuncts.end()) {
           initConjuncts.erase(c);
         }
-        if (transConjuncts.find(c) != transConjuncts.end()) {
+        if (_transConjuncts.find(c) != _transConjuncts.end()) {
           _transConjuncts.erase(c);
           _transConjuncts.erase(solver_->substitute(c, nextMap));
         }
@@ -114,7 +114,7 @@ namespace pono {
         for (int i = 1; i <= k; i++) {
           _t = solver_->make_term(PrimOp::And, _t, unroller_.at_time(tc, i - 1));
         }
-        transConjuncts.insert({boolectorInternal->make_symbol("TRANS_" + std::to_string(_t->hash()), boolSort), _t});
+        transConjuncts.insert({boolectorInternal->make_symbol("TRANS_" + tc->to_string(), boolSort), _t});
       }
     }
 
@@ -123,7 +123,7 @@ namespace pono {
     // UnorderedTermSet
 
     for (auto &ic: initConjuncts) {
-      Term iSymbol = boolectorInternal->make_symbol("INIT_" + std::to_string(ic->hash()), boolSort);
+      Term iSymbol = boolectorInternal->make_symbol("INIT_" + ic->to_string(), boolSort);
       controlVars.insert(iSymbol);
       Term iTerm = toBoolectorInternal.transfer_term(unroller_.at_time(ic, 0));
       // controlledTerms.insert(iTerm);
@@ -147,13 +147,15 @@ namespace pono {
     for(auto &c: ts_.constraints()) {
       Term invarTerm = boolectorInternal->make_term(true);
       for (int i = 0; i <= k; i++) {
-        Term biC = toBoolectorInternal.transfer_term(c.first);
+        Term uC = unroller_.at_time(c.first, i);
+        Term biC = toBoolectorInternal.transfer_term(uC);
         invarTerm = boolectorInternal->make_term(BVAnd, invarTerm, biC);
       }
-      Term invarSymbol = boolectorInternal->make_symbol("INVAR_" + std::to_string(invarTerm->hash()), boolSort);
+      Term invarSymbol = boolectorInternal->make_symbol("INVAR_" + c.first->to_string(), boolSort);
       controlVars.insert(invarSymbol);
       Term eqTerm = boolectorInternal->make_term(PrimOp::Equal, invarSymbol, invarTerm);
       controlTerms.insert(eqTerm);
+      boolectorInternal->assert_formula(invarSymbol);
     }
 
     // SPEC
