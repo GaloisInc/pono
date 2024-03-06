@@ -1,15 +1,24 @@
 
 #include "mus.h"
 
+#include <smt/available_solvers.h>
+
 using namespace smt;
 
 namespace pono {
 
   Mus::Mus(const Property & p, const TransitionSystem & ts, const SmtSolver & solver, PonoOptions opt): super(p, ts, solver, opt) {
     engine_ = Engine::MUS_ENGINE;
+    boolectorInternal = create_solver_for(BTOR, BMC,false, true); // TODO - what does `full_model` do?
   }
 
   Mus::~Mus() = default;
+
+  void Mus::assert_formula(Term t, TermTranslator tt)
+  {
+    boolectorInternal->assert_formula(tt.transfer_term(t));
+  }
+
 
   ProverResult Mus::check_until(int k)
   {
@@ -27,58 +36,152 @@ namespace pono {
 
   Master Mus::buildMusQuery(int k)
   {
-    if (!solver_->get_solver_enum() == BTOR) {
-      // We rely on boolector's `dump_smt2` being implemented
-      throw invalid_argument("MUS engine requires BTOR solver");
+
+    if (!options_.logging_smt_solver_) {
+      throw invalid_argument("MUS engine requires the --logging-smt-solver flag");
     }
 
-    if (options_.logging_smt_solver_) {
-      // LoggingSolver's `dump_smt2` does not invoke its wrapped solver's implementation
-      throw invalid_argument("MUS engine cannot be used with a Logging Solver");
+    TermTranslator toBoolectorInternal(boolectorInternal);
+    Term _true = solver_->make_term(true);
+
+    UnorderedTermSet initConjuncts;
+    Term init = ts_.init();
+    while (init->get_op() == PrimOp::And) {
+      TermIter tIter = init->begin();
+      init = *tIter;
+      Term _init = *++tIter;
+      initConjuncts.insert(_init);
+    }
+    if (init != _true) {
+      initConjuncts.insert(init);
     }
 
-    // INIT
-    Term t = ts_.init();
-    while(t->get_op() == PrimOp::BVAnd) {
-        TermIter tIter = t->begin();
-        t = *tIter;
-        solver_->assert_formula(unroller_.at_time(*++tIter, 0));
+    UnorderedTermMap transConjuncts;
+    Sort boolSort = boolectorInternal->make_sort(SortKind::BOOL);
+    if (ts_.is_functional()) {
+
+      // assert(ts_.constraints().empty());
+
+      // TRANS
+      for (auto const &su : ts_.state_updates()) {
+        Term stateSymbol = su.first;
+        Term stateUpdateTerm = solver_->make_term(Equal, ts_.next(stateSymbol), su.second);
+        Term _t = solver_->make_term(true);
+        for (int i = 1; i <= k; i++) {
+          _t = solver_->make_term(PrimOp::And, _t, unroller_.at_time(stateUpdateTerm, i - 1));
+        }
+
+        transConjuncts.insert({boolectorInternal->make_symbol("TRANS_" + stateSymbol->to_string(), boolSort), _t});
       }
-    solver_->assert_formula(unroller_.at_time(t, 0));
 
-    // TRANS
-    UnorderedTermSet unrolledTransConjuncts;
-    Sort boolSort = solver_->make_sort(SortKind::BOOL);
-    for (auto const & stateUpdate : ts_.state_updates()) {
-      Term stateSymbol = stateUpdate.first;
-      Term tConstraint = solver_->make_term(Equal, ts_.next(stateSymbol), stateUpdate.second);
-      Term transSymbol = solver_->make_symbol("t_" + stateSymbol->to_string(), boolSort);
-      Term _t = solver_->make_term(true);
-      for (int i = 1; i <= k; i++) {
-        _t = solver_->make_term(PrimOp::And, _t, unroller_.at_time(tConstraint, i - 1));
+    } else {
+      UnorderedTermSet constraints;
+      for (auto & c: ts_.constraints()) {
+        assert(c.second);
+        constraints.insert(c.first);
       }
-      unrolledTransConjuncts.insert(solver_->make_term(Equal, transSymbol, _t));
-      solver_->assert_formula(transSymbol);
+
+      UnorderedTermSet _transConjuncts;
+      Term trans = ts_.trans();
+      while (trans->get_op() == PrimOp::And) {
+        TermIter tIter = trans->begin();
+        trans = *tIter;
+        Term _trans = *++tIter;
+        _transConjuncts.insert(_trans);
+      }
+      if (trans != _true) {
+        _transConjuncts.insert(trans);
+      }
+
+
+      UnorderedTermMap nextMap;
+      for(auto &v: ts_.statevars()) {
+        nextMap.insert({v, ts_.next(v)});
+      }
+
+      for (auto &c: constraints) {
+        if (initConjuncts.find(c) != initConjuncts.end()) {
+          initConjuncts.erase(c);
+        }
+        if (transConjuncts.find(c) != transConjuncts.end()) {
+          _transConjuncts.erase(c);
+          _transConjuncts.erase(solver_->substitute(c, nextMap));
+        }
+      }
+
+      for (auto &tc: _transConjuncts) {
+        Term _t = solver_->make_term(true);
+        for (int i = 1; i <= k; i++) {
+          _t = solver_->make_term(PrimOp::And, _t, unroller_.at_time(tc, i - 1));
+        }
+        transConjuncts.insert({boolectorInternal->make_symbol("TRANS_" + std::to_string(_t->hash()), boolSort), _t});
+      }
     }
-    t = solver_->make_term(true);
-    Term transSymbolsConjunction = solver_->make_symbol("_transSymbols", boolSort);
-    for (auto const & saveEqT : unrolledTransConjuncts) {
-      t = solver_->make_term(And, t, saveEqT);
+
+    UnorderedTermSet controlVars;
+    UnorderedTermSet controlTerms;
+    // UnorderedTermSet
+
+    for (auto &ic: initConjuncts) {
+      Term iSymbol = boolectorInternal->make_symbol("INIT_" + std::to_string(ic->hash()), boolSort);
+      controlVars.insert(iSymbol);
+      Term iTerm = toBoolectorInternal.transfer_term(unroller_.at_time(ic, 0));
+      // controlledTerms.insert(iTerm);
+      Term eqTerm = boolectorInternal->make_term(Equal, iSymbol, iTerm);
+      controlTerms.insert(eqTerm);
+      // boolectorInternal->assert_formula(boolectorInternal->make_term(Equal, iSymbol, iTerm));
+      boolectorInternal->assert_formula(iSymbol);
     }
-    solver_->assert_formula(solver_->make_term(Equal, transSymbolsConjunction, t));
-    solver_->assert_formula(transSymbolsConjunction);
+
+    for (auto &tc: transConjuncts) {
+      controlVars.insert(tc.first);
+      Term tcSecondBi = toBoolectorInternal.transfer_term(tc.second);
+      // controlTerms.insert(tcSecondBi);
+      Term eqTerm = boolectorInternal->make_term(Equal, tc.first, tcSecondBi);
+      controlTerms.insert(eqTerm);
+      // boolectorInternal->assert_formula(eqTerm);
+      boolectorInternal->assert_formula(tc.first);
+    }
+
+    // INVAR
+    for(auto &c: ts_.constraints()) {
+      Term invarTerm = boolectorInternal->make_term(true);
+      for (int i = 0; i <= k; i++) {
+        Term biC = toBoolectorInternal.transfer_term(c.first);
+        invarTerm = boolectorInternal->make_term(BVAnd, invarTerm, biC);
+      }
+      Term invarSymbol = boolectorInternal->make_symbol("INVAR_" + std::to_string(invarTerm->hash()), boolSort);
+      controlVars.insert(invarSymbol);
+      Term eqTerm = boolectorInternal->make_term(PrimOp::Equal, invarSymbol, invarTerm);
+      controlTerms.insert(eqTerm);
+    }
 
     // SPEC
-    t = solver_->make_term(true);
+    Term specTerm = boolectorInternal->make_term(true);
     for (int i = 0; i <= k; i++) {
-      t = solver_->make_term(PrimOp::And, t, unroller_.at_time(orig_property_.prop(), i));
+      Term _t = unroller_.at_time(orig_property_.prop(), i);
+      specTerm = boolectorInternal->make_term(BVAnd, specTerm, toBoolectorInternal.transfer_term(_t));
     }
-    solver_->assert_formula(solver_->make_term(PrimOp::Not, t));
+    Term specSymbol = boolectorInternal->make_symbol("SPEC", boolSort);
+    controlVars.insert(specSymbol);
+    Term negSpec = boolectorInternal->make_term(PrimOp::Not, specTerm);
+    Term eqTerm = boolectorInternal->make_term(PrimOp::Equal, specSymbol, negSpec);
+    controlTerms.insert(eqTerm);
+    boolectorInternal->assert_formula(specSymbol);
 
-    string musQueryFile = ".musquery.smt2";
+    // CONTROL TERMS
+    Term cTerm = boolectorInternal->make_term(true);
+    for(auto &ct: controlTerms) {
+      cTerm = boolectorInternal->make_term(BVAnd, ct, cTerm); // TODO - termvec??
+    }
+    Term controlledTermsSymbol = boolectorInternal->make_symbol("CONTROL_TERMS", boolSort);
+    boolectorInternal->assert_formula(boolectorInternal->make_term(Equal, controlledTermsSymbol, cTerm));
+    boolectorInternal->assert_formula(controlledTermsSymbol);
+
+    string musQueryFile = "/home/rperoutka/.musquery.smt2";
     string musOutputFile = ".muses.smt2";
 
-    solver_->dump_smt2(musQueryFile);
+    boolectorInternal->dump_smt2(musQueryFile);
 
     // MUST defaults to remus when alg isn't specified on CLI
     Master m(musQueryFile, "remus");

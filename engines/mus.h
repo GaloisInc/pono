@@ -21,10 +21,11 @@ public:
   std::vector<MUS> check_until_yielding_muses(int k);
 
 private:
+  smt::SmtSolver boolectorInternal{};
+  // smt::TermTranslator toBoolectorInternal;
+
+  void assert_formula(smt::Term t, smt::TermTranslator tt);
   Master buildMusQuery(int k);
-  void assertInitConstraints();
-  void assertUnrolledTransConstraints(int k);
-  void assertUnrolledSpec(int k);
 };  // class Mus
 
 }  // namespace pono
