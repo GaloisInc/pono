@@ -30,11 +30,15 @@ class MusEngineTestsSat : public ::testing::Test,
 
 const string QUIIP_MODELS = getenv("QUIIP_MODELS_ROOT");
 
-const vector<tuple<string, int, int>> quiip_models_btor2_unsat({
+const vector<tuple<string, int, int>> quiip_models_unsat({
+  // BTOR2
   tuple("test-models-btor2/count2/count2.btor2", 5, 1),
   tuple("test-models-btor2/count2/count2mus.btor2", 5, 2),
+  // SMV
   tuple("test-models-smv/altitude_switch_model.smv", 5, 2),
-  tuple("test-models-smv/simple_counter.smv", 5, 1)
+  tuple("test-models-smv/simple_counter.smv", 5, 1),
+  tuple("test-models-smv/count2.smv", 5, 1),
+  tuple("test-models-smv/count2mus.smv", 5, 2)
 });
 
 const vector<tuple<string, int>> quiip_models_btor2_sat({
@@ -91,7 +95,7 @@ TEST_P(MusEngineTestsSat, Sat)
 INSTANTIATE_TEST_SUITE_P(
     ParameterizedSolverMusUnitTests,
     MusEngineTestsUnsat,
-    testing::ValuesIn(quiip_models_btor2_unsat));
+    testing::ValuesIn(quiip_models_unsat));
 
 INSTANTIATE_TEST_SUITE_P(
     ParameterizedSolverMusUnitTests,
