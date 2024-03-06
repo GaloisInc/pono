@@ -8,6 +8,7 @@
 #include "frontends/btor2_encoder.h"
 #include "gtest/gtest.h"
 #include "smt/available_solvers.h"
+#include "smt-switch/logging_solver.h"
 
 using namespace pono;
 using namespace smt;
@@ -49,26 +50,30 @@ const vector<tuple<string, int>> pono_btor2_inputs({
 
 TEST_P(MusEngineTestsUnsat, Unsat)
 {
-  SmtSolver s = create_solver(SolverEnum::BTOR);
+  SmtSolver s = make_shared<LoggingSolver>(create_solver(SolverEnum::BTOR));
   FunctionalTransitionSystem fts(s);
   string filename = QUIIP_MODELS + "/" + get<0>(GetParam());
   BTOR2Encoder be(filename, fts);
   EXPECT_EQ(be.propvec().size(), 1);
   Property p(fts.solver(), be.propvec()[0]);
-  Mus mus(p, fts, s);
+  PonoOptions opts = PonoOptions();
+  opts.logging_smt_solver_ = true;
+  Mus mus(p, fts, s, opts);
   std::vector<MUS> muses = mus.check_until_yielding_muses(get<1>(GetParam()));
   EXPECT_EQ(muses.size(), get<2>(GetParam()));
 }
 
 TEST_P(MusEngineTestsSat, Sat)
 {
-  SmtSolver s = create_solver(SolverEnum::BTOR);
+  SmtSolver s = make_shared<LoggingSolver>(create_solver(SolverEnum::BTOR));
   FunctionalTransitionSystem fts(s);
   string filename = QUIIP_MODELS + "/" + get<0>(GetParam());
   BTOR2Encoder be(filename, fts);
   EXPECT_EQ(be.propvec().size(), 1);
   Property p(fts.solver(), be.propvec()[0]);
-  Mus mus(p, fts, s);
+  PonoOptions opts = PonoOptions();
+  opts.logging_smt_solver_ = true;
+  Mus mus(p, fts, s, opts);
   // TODO - MUST `exit(1)`s on satisfiable instances
   auto r = [&mus]() {
     return mus.check_until(get<1>(GetParam()));
