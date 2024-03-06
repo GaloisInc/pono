@@ -33,7 +33,7 @@ const string QUIIP_MODELS = getenv("QUIIP_MODELS_ROOT");
 const vector<tuple<string, int, int>> quiip_models_btor2_unsat({
   tuple("test-models-btor2/count2/count2.btor2", 5, 1),
   tuple("test-models-btor2/count2/count2mus.btor2", 5, 2),
-  tuple("test-models-smv/asm.smv", 5, 4),
+  tuple("test-models-smv/altitude_switch_model.smv", 5, 2),
   tuple("test-models-smv/simple_counter.smv", 5, 1)
 });
 
