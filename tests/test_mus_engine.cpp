@@ -35,10 +35,10 @@ const vector<tuple<string, int, int>> quiip_models_unsat({
   tuple("test-models-btor2/count2/count2.btor2", 5, 1),
   tuple("test-models-btor2/count2/count2mus.btor2", 5, 2),
   // SMV
-  tuple("test-models-smv/altitude_switch_model.smv", 5, 2),
-  tuple("test-models-smv/simple_counter.smv", 5, 1),
-  tuple("test-models-smv/count2.smv", 5, 1),
-  tuple("test-models-smv/count2mus.smv", 5, 2)
+  tuple("test-models-smv/altitude_switch_model/altitude_switch_model.smv", 5, 2),
+  tuple("test-models-smv/simple_counter/simple_counter.smv", 5, 1),
+  tuple("test-models-smv/count2/count2.smv", 5, 1),
+  tuple("test-models-smv/count2/count2mus.smv", 5, 2)
 });
 
 const vector<tuple<string, int>> quiip_models_btor2_sat({
