@@ -21,11 +21,32 @@ public:
   std::vector<MUS> check_until_yielding_muses(int k);
 
 private:
-  smt::SmtSolver boolectorInternal{};
-  // smt::TermTranslator toBoolectorInternal;
-
+  enum ConstraintType {
+    INIT,
+    TRANS,
+    INVAR,
+    SPEC,
+    CONTROL_TERMS
+  };
+  unordered_map<ConstraintType, string> constraintTypeToStr{
+    {INIT, "INIT"},
+    {TRANS, "TRANS"},
+    {INVAR, "INVAR"},
+    {SPEC, "SPEC"},
+    {CONTROL_TERMS, "CONTROL_TERMS"}
+  };
+  smt::TermTranslator* toBoolectorInternal;
+  smt::TermVec controlVars;
+  smt::TermVec controlTerms;
+  smt::SmtSolver boolector;
   void assert_formula(smt::Term t, smt::TermTranslator tt);
   Master buildMusQuery(int k);
+  smt::Term unrollOrigTerm(smt::Term t, int i);
+  smt::Term makeControlVar(string id);
+  smt::Term makeControlVar(ConstraintType type);
+  smt::Term makeControlVar(ConstraintType type, smt::Term t);
+  smt::Term makeControlEquality(const smt::Term& controlVar, const smt::Term& constraint);
+  std::vector<smt::Term> musAsOrigTerms(MUS mus);
 };  // class Mus
 
 }  // namespace pono
