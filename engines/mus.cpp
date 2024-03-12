@@ -1,7 +1,7 @@
 
 #include "mus.h"
-
-#include <smt/available_solvers.h>
+#include "smt/available_solvers.h"
+#include <regex>
 #include "utils/logger.h"
 
 using namespace smt;
@@ -40,7 +40,7 @@ namespace pono {
     return m.muses;
   }
 
-  smt::Term Mus::unrollOrigTerm(Term t, int i)
+  Term Mus::unrollOrigTerm(Term t, int i)
   {
     return toBoolectorInternal->transfer_term(unroller_.at_time(t, i));
   }
@@ -60,7 +60,11 @@ namespace pono {
 
   Term Mus::makeControlVar(ConstraintType type, const Term t)
   {
-    return makeControlVar(constraintTypeToStr[type] + "_" + t->to_string());
+    string s = t->to_string();
+    if (type == INVAR) {
+      s = std::to_string(t->hash());
+    }
+    return makeControlVar(constraintTypeToStr[type] + "_" + s);
   }
 
   Term Mus::makeControlEquality(const Term& controlVar, const Term& constraint)
@@ -70,6 +74,12 @@ namespace pono {
     return eqTerm;
   }
 
+  Term Mus::makeConjunction(TermVec ts)
+  {
+    return ts.size() == 1 ? ts[0] : boolector->make_term(PrimOp::And, ts);
+  }
+
+
   Master Mus::buildMusQuery(int k)
   {
 
@@ -77,7 +87,6 @@ namespace pono {
       throw invalid_argument("MUS engine requires the --logging-smt-solver flag");
     }
 
-    // TermTranslator toBoolectorInternal(boolector);
     Term _true = solver_->make_term(true);
 
     UnorderedTermSet initConjuncts;
@@ -101,7 +110,7 @@ namespace pono {
         for (int i = 1; i <= k; i++) {
           uts.push_back(unrollOrigTerm(stateUpdateTerm, i - 1));
         }
-        transConjuncts.insert({stateSymbol, boolector->make_term(PrimOp::And, uts)});
+        transConjuncts.insert({stateSymbol, makeConjunction(uts)});
       }
     } else {
       UnorderedTermSet constraints;
@@ -142,7 +151,13 @@ namespace pono {
         for (int i = 1; i <= k; i++) {
           uts.push_back(unrollOrigTerm(tc, i - 1));
         }
-        transConjuncts.insert({tc, boolector->make_term(PrimOp::And, uts)});
+        transConjuncts.insert({tc, makeConjunction(uts)});
+      }
+    }
+
+    for(auto &c: ts_.constraints()) {
+      if (initConjuncts.find(c.first) != initConjuncts.end()) {
+        initConjuncts.erase(c.first);
       }
     }
 
@@ -156,54 +171,123 @@ namespace pono {
       makeControlEquality(cv, tc.second);
     }
 
-    // INVAR
     for(auto &c: ts_.constraints()) {
       TermVec uts;
       for (int i = 0; i <= k; i++) {
-        uts.push_back(unrollOrigTerm(c.first, i));
+        Term otu = unrollOrigTerm(c.first, i);
+        uts.push_back(otu);
       }
       Term cv = makeControlVar(ConstraintType::INVAR, c.first);
-      makeControlEquality(cv, boolector->make_term(PrimOp::And, uts));
+      makeControlEquality(cv, makeConjunction(uts));
     }
 
     // SPEC
-    Term specTerm = boolector->make_term(true);
+    Term spec = orig_property_.prop();
+    logger.log(0, "Checking Spec: {}", spec);
+    TermVec us;
     for (int i = 0; i <= k; i++) {
-      specTerm = boolector->make_term(BVAnd, specTerm, unrollOrigTerm(orig_property_.prop(), i));
+      us.push_back(unrollOrigTerm(spec, i));
     }
-    Term specCv = makeControlVar(ConstraintType::SPEC);
-    Term negSpec = boolector->make_term(PrimOp::Not, specTerm);
+    Term specCv = makeControlVar(ConstraintType::SPEC, spec);
+    Term negSpec = boolector->make_term(PrimOp::Not, makeConjunction(us));
     makeControlEquality(specCv, negSpec);
 
     // CONTROL TERMS
     Term ctCv = makeControlVar(ConstraintType::CONTROL_TERMS);
-    boolector->assert_formula(makeControlEquality(ctCv, boolector->make_term(BVAnd, controlTerms)));
+    Term ce = makeControlEquality(ctCv, makeConjunction(controlTerms));
+    boolector->assert_formula(ce);
+    controlVars.push_back(ctCv);
 
     for(auto &cv: controlVars) {
       boolector->assert_formula(cv);
     }
 
     string musQueryFile = ".musquery.smt2";
-    string musOutputFile = ".muses.smt2";
-
     boolector->dump_smt2(musQueryFile);
 
+    boolectorAliasCleanup(musQueryFile);
     // MUST defaults to remus when alg isn't specified on CLI
-    Master m(musQueryFile, "remus");
-    m.output_file = musOutputFile;
-
-    return m;
+    return Master(musQueryFile, "remus");
   }
 
   TermVec Mus::musAsOrigTerms(MUS mus)
   {
     TermVec terms;
-    for(int j = 1; j < mus.bool_mus.size() - 2; j++) {
-      if (mus.bool_mus[j]) {
-        terms.push_back(controlVars.at(j - 1));
+    // Skip control terms assertion
+    assert(mus.bool_mus[0]);
+    for(int i = 1; i < mus.bool_mus.size(); i++) {
+      if (mus.bool_mus[i]) {
+          terms.push_back(controlVars.at(i-1));
       }
     }
     return terms;
   }
 
+bool ends_with(std::string const & value, std::string const & ending)
+  {
+    if (ending.size() > value.size()) return false;
+    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+  }
+
+  void Mus::boolectorAliasCleanup(string fname)
+  {
+    std::ifstream smtQuery(fname);
+    std::stringstream buffer;
+    buffer << smtQuery.rdbuf();
+    std::vector<std::string> lines;
+    std::istringstream stream2(buffer.str());
+
+    while(!stream2.eof()) {
+        std::string l;
+        getline(stream2, l);
+        lines.push_back(l);
+    }
+
+    //lines[0] = "(set-logic AUFBV)";
+
+    for (int i = 1; i < lines.size(); i++) {
+        std::string line = lines[i];
+        size_t idx = line.rfind("(select");
+        if (idx != std::string::npos) {
+            if (ends_with(lines[i - 1], "(ite ") || lines[i - 1].rfind("() Bool") != std::string::npos) {
+                int lineNo = i;
+                int selectEndLineNo = -1;
+                int selectEnd = -1;
+                int parensToClose = 0;
+                while (lineNo < lines.size() && selectEndLineNo == -1) {
+                    std::string _line = lines[lineNo];
+                    for(int j = 0; j < _line.size(); j++) {
+                        char c = _line[j];
+                        if (c == '(') {
+                            parensToClose++;
+                        } else if (c == ')') {
+                            parensToClose--;
+                            if (parensToClose == 0) {
+                                selectEnd = j;
+                                selectEndLineNo = lineNo;
+                                break;
+                            }
+                        }
+                    }
+                    lineNo++;
+                }
+                lines[selectEndLineNo].insert(selectEnd + 1, " #b1) true false)");
+                lines[i].insert(idx, "(ite (= ");
+            }
+        }
+    }
+    std::ofstream out(fname);
+    vector<string> aliasFuns = {
+      "(define-fun not ((a (_ BitVec 1))) Bool (ite (= a #b1) true false))",
+      "(define-fun and ((a (_ BitVec 1)) (b Bool)) Bool (ite (= a #b1) b false))"};
+    for(auto &l: aliasFuns) out << l << std::endl;
+    bool skip = true;
+    for(auto &l: lines) {
+      if (skip) {
+        skip = false;
+      } else {
+        out << l << std::endl;
+      }
+    }
+  }
 }  // namespace pono

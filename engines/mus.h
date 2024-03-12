@@ -42,11 +42,13 @@ private:
   void assert_formula(smt::Term t, smt::TermTranslator tt);
   Master buildMusQuery(int k);
   smt::Term unrollOrigTerm(smt::Term t, int i);
+  smt::Term makeConjunction(smt::TermVec ts);
   smt::Term makeControlVar(string id);
   smt::Term makeControlVar(ConstraintType type);
   smt::Term makeControlVar(ConstraintType type, smt::Term t);
   smt::Term makeControlEquality(const smt::Term& controlVar, const smt::Term& constraint);
   std::vector<smt::Term> musAsOrigTerms(MUS mus);
+  void boolectorAliasCleanup(string fname);
 };  // class Mus
 
 }  // namespace pono
