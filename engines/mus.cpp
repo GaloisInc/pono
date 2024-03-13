@@ -199,7 +199,7 @@ namespace pono {
     Term ctCv = makeControlVar(ConstraintType::CONTROL_TERMS);
     Term ce = makeControlEquality(ctCv, makeConjunction(controlTerms));
     boolector->assert_formula(ce);
-    controlVars.push_back(ctCv);
+    boolector->assert_formula(ctCv);
 
     for(auto &cv: controlVars) {
       boolector->assert_formula(cv);
@@ -215,21 +215,22 @@ namespace pono {
     return Master(musQueryFile, "remus");
   }
 
+  /*
+   * MUS::bool_mus marks which assertions (in the order they appear in the MUS
+   * query) are elements of the MUS. The first two assertions in our MUS query
+   * are elements of the CONTROL_TERMS infrastructure. The remain assertions
+   * are control variable assertions in the same order as they appear in `controlVars`.
+   */
   TermVec Mus::musAsOrigTerms(MUS mus)
   {
     // All MUSes should contain the CONTROL_TERMS infrastructure:
-    assert(mus.bool_mus[0]);
-    assert(mus.bool_mus[mus.bool_mus.size() - 1]);
+    assert(mus.bool_mus[0]); // (assert (= CONTROL_TERMS <control terms conjunction>))
+    assert(mus.bool_mus[1]); // (assert CONTROL_TERMS)
 
     TermVec terms;
-    /*
-     * MUS elements at indices 0 and (mus.bool_mus.size() - 1) are the
-     * CONTROL_TERMS infrastructure tying all other control vars to their
-     * constaints. Don't include them in the returned MUS.
-     */
-    for(int i = 1; i < mus.bool_mus.size() - 1; i++) {
-      if (mus.bool_mus[i]) {
-          terms.push_back(controlVars.at(i-1));
+    for (int i = 0; i < controlVars.size(); i++) {
+      if (mus.bool_mus[i + 2]) {
+        terms.push_back(controlVars[i]);
       }
     }
     return terms;
