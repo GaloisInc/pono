@@ -103,49 +103,43 @@ namespace pono {
     }
 
     UnorderedTermSet initConjuncts = extractTopLevelConjuncts(ts_.init());
+    UnorderedTermSet transConjuncts = extractTopLevelConjuncts(ts_.trans());
 
-    UnorderedTermMap transConjuncts;
-    if (ts_.is_functional()) {
-      for (auto const &su : ts_.state_updates()) {
-        Term stateSymbol = su.first;
-        Term stateUpdateTerm = solver_->make_term(Equal, ts_.next(stateSymbol), su.second);
-        TermVec uts;
-        for (int i = 1; i <= k; i++) {
-          uts.push_back(unrollOrigTerm(stateUpdateTerm, i - 1));
-        }
-        transConjuncts.insert({stateSymbol, makeConjunction(uts)});
+    UnorderedTermMap nextMap;
+    for(auto &v: ts_.statevars()) {
+      nextMap.insert({v, ts_.next(v)});
+    }
+
+    UnorderedTermSet constraints;
+    for (auto & c: ts_.constraints()) {
+      assert(c.second);
+      constraints.insert(c.first);
+    }
+
+    for (auto &c: constraints) {
+      if (initConjuncts.find(c) != initConjuncts.end()) {
+        initConjuncts.erase(c);
       }
-    } else {
-      UnorderedTermSet constraints;
-      for (auto & c: ts_.constraints()) {
-        assert(c.second);
-        constraints.insert(c.first);
+      if (transConjuncts.find(c) != transConjuncts.end()) {
+        transConjuncts.erase(c);
+        transConjuncts.erase(solver_->substitute(c, nextMap));
       }
+    }
 
-      UnorderedTermSet _transConjuncts = extractTopLevelConjuncts(ts_.trans());
-
-      UnorderedTermMap nextMap;
-      for(auto &v: ts_.statevars()) {
-        nextMap.insert({v, ts_.next(v)});
-      }
-
-      for (auto &c: constraints) {
-        if (initConjuncts.find(c) != initConjuncts.end()) {
-          initConjuncts.erase(c);
-        }
-        if (_transConjuncts.find(c) != _transConjuncts.end()) {
-          _transConjuncts.erase(c);
-          _transConjuncts.erase(solver_->substitute(c, nextMap));
+    UnorderedTermMap transIdToConjunct;
+    for (auto &tc: transConjuncts) {
+      Term id = tc;
+      if (tc->get_op() == PrimOp::Equal) {
+        Term lhs = *tc->begin();
+        if (ts_.is_next_var(lhs)) {
+          id = lhs;
         }
       }
-
-      for (auto &tc: _transConjuncts) {
-        TermVec uts;
-        for (int i = 1; i <= k; i++) {
-          uts.push_back(unrollOrigTerm(tc, i - 1));
-        }
-        transConjuncts.insert({tc, makeConjunction(uts)});
+      TermVec uts;
+      for (int i = 1; i <= k; i++) {
+        uts.push_back(unrollOrigTerm(tc, i - 1));
       }
+      transIdToConjunct.insert({id, makeConjunction(uts)});
     }
 
     for(auto &c: ts_.constraints()) {
@@ -159,7 +153,7 @@ namespace pono {
       makeControlEquality(cv, unrollOrigTerm(ic, 0));
     }
 
-    for (auto &tc: transConjuncts) {
+    for (auto &tc: transIdToConjunct) {
       Term cv = makeControlVar(ConstraintType::TRANS, tc.first);
       makeControlEquality(cv, tc.second);
     }
