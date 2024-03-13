@@ -79,6 +79,21 @@ namespace pono {
     return ts.size() == 1 ? ts[0] : boolector->make_term(PrimOp::And, ts);
   }
 
+  UnorderedTermSet Mus::extractTopLevelConjuncts(Term conjunction)
+  {
+    UnorderedTermSet conjuncts;
+    Term t = conjunction;
+    while (t->get_op() == PrimOp::And) {
+      TermIter tIter = t->begin();
+      t = *tIter;
+      Term _init = *++tIter;
+      conjuncts.insert(_init);
+    }
+    if (t != solver_->make_term(true)) {
+      conjuncts.insert(t);
+    }
+    return conjuncts;
+  }
 
   Master Mus::buildMusQuery(int k)
   {
@@ -87,19 +102,7 @@ namespace pono {
       throw invalid_argument("MUS engine requires the --logging-smt-solver flag");
     }
 
-    Term _true = solver_->make_term(true);
-
-    UnorderedTermSet initConjuncts;
-    Term init = ts_.init();
-    while (init->get_op() == PrimOp::And) {
-      TermIter tIter = init->begin();
-      init = *tIter;
-      Term _init = *++tIter;
-      initConjuncts.insert(_init);
-    }
-    if (init != _true) {
-      initConjuncts.insert(init);
-    }
+    UnorderedTermSet initConjuncts = extractTopLevelConjuncts(ts_.init());
 
     UnorderedTermMap transConjuncts;
     if (ts_.is_functional()) {
@@ -119,17 +122,7 @@ namespace pono {
         constraints.insert(c.first);
       }
 
-      UnorderedTermSet _transConjuncts;
-      Term trans = ts_.trans();
-      while (trans->get_op() == PrimOp::And) {
-        TermIter tIter = trans->begin();
-        trans = *tIter;
-        Term _trans = *++tIter;
-        _transConjuncts.insert(_trans);
-      }
-      if (trans != _true) {
-        _transConjuncts.insert(trans);
-      }
+      UnorderedTermSet _transConjuncts = extractTopLevelConjuncts(ts_.trans());
 
       UnorderedTermMap nextMap;
       for(auto &v: ts_.statevars()) {

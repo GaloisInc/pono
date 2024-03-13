@@ -40,6 +40,7 @@ private:
   smt::TermVec controlTerms;
   smt::SmtSolver boolector;
   void assert_formula(smt::Term t, smt::TermTranslator tt);
+  smt::UnorderedTermSet extractTopLevelConjuncts(smt::Term conjunction);
   Master buildMusQuery(int k);
   smt::Term unrollOrigTerm(smt::Term t, int i);
   smt::Term makeConjunction(smt::TermVec ts);
