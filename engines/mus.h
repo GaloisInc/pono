@@ -42,7 +42,8 @@ private:
   void assert_formula(smt::Term t, smt::TermTranslator tt);
   smt::UnorderedTermSet extractTopLevelConjuncts(smt::Term conjunction);
   Master buildMusQuery(int k);
-  smt::Term unrollOrigTerm(smt::Term t, int i);
+  smt::Term unrollUntilBound(smt::Term t, int k);
+  smt::Term unrollOrigTerm(smt::Term t, int k);
   smt::Term makeConjunction(smt::TermVec ts);
   smt::Term makeControlVar(string id);
   smt::Term makeControlVar(ConstraintType type);

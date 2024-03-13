@@ -43,9 +43,18 @@ namespace pono {
     return m.muses;
   }
 
-  Term Mus::unrollOrigTerm(Term t, int i)
+  Term Mus::unrollOrigTerm(Term t, int k)
   {
-    return toBoolectorInternal->transfer_term(unroller_.at_time(t, i));
+    return toBoolectorInternal->transfer_term(unroller_.at_time(t, k));
+  }
+
+  Term Mus::unrollUntilBound(Term t, int k)
+  {
+    TermVec uts;
+    for (int i = 0; i < k; i++) {
+      uts.push_back(unrollOrigTerm(t, i));
+    }
+    return makeConjunction(uts);
   }
 
   Term Mus::makeControlVar(string id)
@@ -134,11 +143,7 @@ namespace pono {
           id = lhs;
         }
       }
-      TermVec uts;
-      for (int i = 1; i <= k; i++) {
-        uts.push_back(unrollOrigTerm(tc, i - 1));
-      }
-      transIdToConjunct.insert({id, makeConjunction(uts)});
+      transIdToConjunct.insert({id, unrollUntilBound(tc, k)});
     }
 
     for(auto &c: ts_.constraints()) {
@@ -158,24 +163,15 @@ namespace pono {
     }
 
     for(auto &c: ts_.constraints()) {
-      TermVec uts;
-      for (int i = 0; i <= k; i++) {
-        Term otu = unrollOrigTerm(c.first, i);
-        uts.push_back(otu);
-      }
       Term cv = makeControlVar(ConstraintType::INVAR, c.first);
-      makeControlEquality(cv, makeConjunction(uts));
+      makeControlEquality(cv, unrollUntilBound(c.first, k + 1));
     }
 
     // SPEC
     Term spec = orig_property_.prop();
     logger.log(0, "Checking Spec: {}", spec);
-    TermVec us;
-    for (int i = 0; i <= k; i++) {
-      us.push_back(unrollOrigTerm(spec, i));
-    }
     Term specCv = makeControlVar(ConstraintType::SPEC, spec);
-    Term negSpec = boolector->make_term(PrimOp::Not, makeConjunction(us));
+    Term negSpec = boolector->make_term(PrimOp::Not, unrollUntilBound(spec, k + 1));
     makeControlEquality(specCv, negSpec);
 
     // CONTROL TERMS
