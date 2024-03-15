@@ -9,9 +9,6 @@ using namespace smt;
 namespace pono {
 
   Mus::Mus(const Property & p, const TransitionSystem & ts, const SmtSolver & solver, PonoOptions opt): super(p, ts, solver, opt) {
-    if (!options_.logging_smt_solver_) {
-      throw invalid_argument("MUS engine requires the --logging-smt-solver flag");
-    }
     engine_ = Engine::MUS_ENGINE;
     // TODO(rperoutka) - what does `full_model` do?
     boolector = create_solver_for(BTOR, BMC, false, true);

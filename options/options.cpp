@@ -670,7 +670,11 @@ ProverResult PonoOptions::parse_and_set_options(int argc,
       switch (opt.index()) {
         case HELP:
           // not possible, because handled further above and exits the program
-        case ENGINE: engine_ = to_engine(opt.arg); break;
+        case ENGINE: {
+          if (opt.arg == std::string("mus")) logging_smt_solver_ = true;
+          engine_ = to_engine(opt.arg);
+          break;
+        }
         case BOUND: bound_ = atoi(opt.arg); break;
         case PROP: prop_idx_ = atoi(opt.arg); break;
         case VERBOSITY: verbosity_ = atoi(opt.arg); break;
