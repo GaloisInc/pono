@@ -132,8 +132,13 @@ namespace pono {
   Master Mus::buildMusQuery(int k)
   {
 
+    UnorderedTermSet initConjuncts;
+    if (options_.mus_atomic_init_) {
+      initConjuncts.insert(ts_.init());
+    } else {
+      initConjuncts = extractTopLevelConjuncts(ts_.init());
+    }
 
-    UnorderedTermSet initConjuncts = extractTopLevelConjuncts(ts_.init());
     UnorderedTermSet transConjuncts = extractTopLevelConjuncts(ts_.trans());
 
     /*
@@ -176,7 +181,13 @@ namespace pono {
     }
 
     for (auto &ic: initConjuncts) {
-      Term cv = makeControlVar(ConstraintType::INIT, ic);
+      Term cv;
+      if (options_.mus_atomic_init_) {
+        assert(initConjuncts.size() == 1);
+        cv = makeControlVar(ConstraintType::INIT);
+      } else {
+        cv = makeControlVar(ConstraintType::INIT, ic);
+      }
       makeControlEquality(cv, unrollOrigTerm(ic, 0));
     }
 
@@ -197,6 +208,7 @@ namespace pono {
     makeControlEquality(specCv, negSpec);
 
     Term ctCv = makeControlVar(ConstraintType::CONTROL_TERMS);
+    controlVars.pop_back();
     Term ce = makeControlEquality(ctCv, makeConjunction(controlTerms));
     boolector->assert_formula(ce);
     boolector->assert_formula(ctCv);

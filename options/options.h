@@ -151,7 +151,8 @@ class PonoOptions
         kind_no_ind_check_(default_kind_no_ind_check_),
         kind_no_ind_check_property_(default_kind_no_ind_check_property_),
         kind_one_time_base_check_(default_kind_one_time_base_check_),
-        kind_bound_step_(default_kind_bound_step_)
+        kind_bound_step_(default_kind_bound_step_),
+        mus_atomic_init_(default_mus_atomic_init_)
   {
   }
 
@@ -292,6 +293,8 @@ class PonoOptions
   bool kind_one_time_base_check_;
   // K-induction: amount of steps by which transition relation is unrolled
   unsigned kind_bound_step_;
+  // MUS Engine: treat the conjunction of all init constraints as a single MUS constraint
+  bool mus_atomic_init_;
 
 private:
   // Default options
@@ -360,6 +363,7 @@ private:
   static const bool default_kind_no_ind_check_property_ = false;
   static const bool default_kind_one_time_base_check_ = false;
   static const unsigned default_kind_bound_step_ = 1;
+  static const bool default_mus_atomic_init_ = false;
 };
 
 // Useful functions for printing etc...

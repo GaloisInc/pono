@@ -90,7 +90,8 @@ enum optionIndex
   KIND_NO_IND_CHECK,
   KIND_NO_IND_CHECK_PROPERTY,
   KIND_ONE_TIME_BASE_CHECK,
-  KIND_BOUND_STEP
+  KIND_BOUND_STEP,
+  MUS_ATOMIC_INIT
 };
 
 struct Arg : public option::Arg
@@ -586,7 +587,16 @@ const option::Descriptor usage[] = {
     "  --kind-bound-step \tAmount by which bound (unrolling depth) "
     "is increased in k-induction (default: 1)"
     },
-  { 0, 0, 0, 0, 0, 0 }
+  { MUS_ATOMIC_INIT,
+  0,
+  "",
+  "mus-atomic-init",
+  Arg::None,
+  "  --mus-atomic-init \ttreat the conjunction of all init "
+  "constraints as a single MUS constraint. "
+  "(default: false)"
+  },
+{ 0, 0, 0, 0, 0, 0 },
 };
 /*********************************** end Option Handling setup
  * ***************************************/
@@ -775,6 +785,7 @@ ProverResult PonoOptions::parse_and_set_options(int argc,
 	  if (kind_bound_step_ == 0)
 	    throw PonoException("--kind-bound-step must be greater than 0");
 	  break;
+        case MUS_ATOMIC_INIT: mus_atomic_init_ = true; break;
         case UNKNOWN_OPTION:
           // not possible because Arg::Unknown returns ARG_ILLEGAL
           // which aborts the parse with an error
