@@ -19,6 +19,7 @@ public:
 
   ProverResult check_until(int k) override;
   std::vector<MUS> check_until_yielding_muses(int k);
+  Master buildMusQuery(int k);
 
 private:
   enum ConstraintType {
@@ -41,7 +42,6 @@ private:
   smt::SmtSolver boolector;
   void assert_formula(smt::Term t, smt::TermTranslator tt);
   smt::UnorderedTermSet extractTopLevelConjuncts(smt::Term conjunction);
-  Master buildMusQuery(int k);
   smt::Term unrollUntilBound(smt::Term t, int k);
   smt::Term unrollOrigTerm(smt::Term t, int k);
   smt::Term makeConjunction(smt::TermVec ts);
