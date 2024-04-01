@@ -143,6 +143,8 @@ set(INCLUDE_DIRS
   "${MUSTOOL_DIR}/mcsmus/minisat/mtl"
   "${MUSTOOL_DIR}/mcsmus/glucose/core"
   "${MUSTOOL_DIR}/mcsmus/glucose/simp"
+  "${MUSTOOL_DIR}/deps/z3/src/api"
+  "${MUSTOOL_DIR}/deps/z3/src/api/c++"
   )
 
 set(SOURCES
@@ -314,6 +316,7 @@ target_include_directories(pono-bin PUBLIC
   "${MUSTOOL_DIR}/mcsmus/minisat/mtl"
   "${MUSTOOL_DIR}/mcsmus/glucose/core"
   "${MUSTOOL_DIR}/mcsmus/glucose/simp"
+  "${MUSTOOL_DIR}/deps/z3/src/api/c++"
 )
 
 target_link_libraries(pono-bin PUBLIC pono-lib)

@@ -2,13 +2,30 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 DEPS=$DIR/../deps
+MUST_DEPS=$DEPS/mustool/deps
 
-MUST_VERSION=aea91490e4cd25b9356c2e2dfd53f90b956f827e
+MUST_VERSION=6190d310ce645d633031a0b385ef4a3f6d4f75dc
+Z3_VERSION=6cc52e04c3ea7e2534644a285d231bdaaafd8714
 
 mkdir -p $DEPS
-
 cd $DEPS
-git clone https://github.com/GaloisInc/mustool.git
-cd mustool
-git checkout -f $MUST_VERSION
-make libmust USESMT=YES
+
+if [ ! -d "$DEPS/mustool" ]; then
+    cd $DEPS
+    git clone https://github.com/GaloisInc/mustool.git
+
+    mkdir -p $MUST_DEPS
+    cd $MUST_DEPS
+    git clone https://github.com/Z3Prover/z3.git
+    cd z3
+    git checkout -f $Z3_VERSION
+    ./configure --staticlib
+    cd build
+    make -j$(nproc)
+
+    cd $MUST_DEPS/..
+    git checkout -f $MUST_VERSION
+    make libmust USESMT=YES
+else
+    echo "$DEPS/mustool already exists. If you want to rebuild, please remove it manually."
+fi
