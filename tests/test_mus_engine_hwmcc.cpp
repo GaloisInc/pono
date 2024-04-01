@@ -26,7 +26,7 @@ class MusEngineSameSatResult : public ::testing::Test,
 {
 };
 
-const string HWMCC = getenv("HWMCC_ROOT");
+const string HWMCC = std::string(getenv("QUIIP_MODELS_ROOT")) + "/test/btor2/hwmcc-benchmarks/";
 
 vector<string> getBenchmarks()
 {
