@@ -33,13 +33,9 @@ private:
     {INIT, "INIT"},
     {TRANS, "TRANS"},
     {INVAR, "INVAR"},
-    {SPEC, "SPEC"},
-    {CONTROL_TERMS, "CONTROL_TERMS"}
+    {SPEC, "SPEC"}
   };
-  smt::TermTranslator* toBoolectorInternal;
   smt::TermVec controlVars;
-  smt::TermVec controlTerms;
-  smt::SmtSolver boolector;
   void assert_formula(smt::Term t, smt::TermTranslator tt);
   smt::UnorderedTermSet extractTopLevelConjuncts(smt::Term conjunction);
   smt::Term unrollUntilBound(smt::Term t, int k);
@@ -48,7 +44,7 @@ private:
   smt::Term makeControlVar(string id);
   smt::Term makeControlVar(ConstraintType type);
   smt::Term makeControlVar(ConstraintType type, smt::Term t);
-  smt::Term makeControlEquality(const smt::Term& controlVar, const smt::Term& constraint);
+  void assertControlEquality(const smt::Term& controlVar, const smt::Term& constraint);
   std::vector<smt::Term> musAsOrigTerms(MUS mus);
   void boolectorAliasCleanup(string fname);
 };  // class Mus
