@@ -259,7 +259,10 @@ bool ends_with(std::string const & value, std::string const & ending)
    *
    *  This function explictly converts `select`s used as
    *    - conditions for `ite`s
+   *    - sole argument for `not`
+   *    - first argument for `and`
    *    - the sole term in a fun returing `Bool`.
+   *  to `Bool`
    */
   void Mus::boolectorAliasCleanup(string fname)
   {
@@ -275,11 +278,16 @@ bool ends_with(std::string const & value, std::string const & ending)
         lines.push_back(l);
     }
 
+    std::vector<string> cStrings = {"(ite ", "(not ", "(and ", "() Bool "};
+
     for (int i = 1; i < lines.size(); i++) {
         std::string line = lines[i];
         size_t idx = line.rfind("(select");
         if (idx != std::string::npos) {
-            if (ends_with(lines[i - 1], "(ite ") || lines[i - 1].rfind("() Bool") != std::string::npos) {
+            if (std::any_of(
+              cStrings.begin(),
+              cStrings.end(),
+              [lines, i](const string& cStr){return ends_with(lines[i - 1], cStr);})) {
                 int lineNo = i;
                 int selectEndLineNo = -1;
                 int selectEnd = -1;
@@ -307,10 +315,6 @@ bool ends_with(std::string const & value, std::string const & ending)
         }
     }
     std::ofstream out(fname);
-    vector<string> aliasFuns = {
-      "(define-fun not ((a (_ BitVec 1))) Bool (ite (= a #b1) true false))",
-      "(define-fun and ((a (_ BitVec 1)) (b Bool)) Bool (ite (= a #b1) b false))"};
-    for(auto &l: aliasFuns) out << l << std::endl;
     bool skip = true;
     for(auto &l: lines) {
       if (skip) {
