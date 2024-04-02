@@ -25,7 +25,7 @@ if [ ! -d "$DEPS/mustool" ]; then
 
     cd $MUST_DEPS/..
     git checkout -f $MUST_VERSION
-    make libmust USESMT=YES
+    make libmust USESMT=YES -j$(nproc)
 else
     echo "$DEPS/mustool already exists. If you want to rebuild, please remove it manually."
 fi
