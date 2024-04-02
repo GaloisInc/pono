@@ -4,7 +4,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 DEPS=$DIR/../deps
 MUST_DEPS=$DEPS/mustool/deps
 
-MUST_VERSION=6190d310ce645d633031a0b385ef4a3f6d4f75dc
+MUST_VERSION=ed99aa14a4faf361504bf2f0c6ed0377b252f88c
 Z3_VERSION=6cc52e04c3ea7e2534644a285d231bdaaafd8714
 
 mkdir -p $DEPS
