@@ -13,7 +13,7 @@ if [ ! -d "$DEPS/mustool" ]; then
     git clone https://github.com/GaloisInc/mustool.git
     cd mustool
     git checkout -f $MUST_VERSION
-    make libmust USESMT=YES -j$(nproc)
+    make libmust -j$(nproc)
 else
     echo "$DEPS/mustool already exists. If you want to rebuild, please remove it manually."
 fi
