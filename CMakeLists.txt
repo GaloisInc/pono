@@ -63,6 +63,7 @@ message("-- FOUND FLEX INCLUDE DIRS: ${FLEX_INCLUDE_DIRS}")
 
 set(SMT_SWITCH_DIR "${PROJECT_SOURCE_DIR}/deps/smt-switch")
 set(MUSTOOL_DIR "${PROJECT_SOURCE_DIR}/deps/mustool")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D NOSMT")
 
 # rely on cmake modules from smt-switch (required anyway)
 set(CMAKE_MODULE_PATH ${SMT_SWITCH_DIR}/cmake)
@@ -143,8 +144,6 @@ set(INCLUDE_DIRS
   "${MUSTOOL_DIR}/mcsmus/minisat/mtl"
   "${MUSTOOL_DIR}/mcsmus/glucose/core"
   "${MUSTOOL_DIR}/mcsmus/glucose/simp"
-  "${MUSTOOL_DIR}/deps/z3/src/api"
-  "${MUSTOOL_DIR}/deps/z3/src/api/c++"
   )
 
 set(SOURCES
@@ -274,7 +273,7 @@ if (WITH_COREIR)
 endif()
 
 target_link_libraries(pono-lib PUBLIC "${SMT_SWITCH_DIR}/local/lib/libsmt-switch.a")
-target_link_libraries(pono-lib PUBLIC "${MUSTOOL_DIR}/libmust.a" z z3)
+target_link_libraries(pono-lib PUBLIC "${MUSTOOL_DIR}/libmust.a" z)
 target_link_libraries(pono-lib PUBLIC "${PROJECT_SOURCE_DIR}/deps/btor2tools/build/lib/libbtor2parser.a")
 target_link_libraries(pono-lib PUBLIC "${GMPXX_LIBRARIES}")
 target_link_libraries(pono-lib PUBLIC "${GMP_LIBRARIES}")
@@ -316,7 +315,6 @@ target_include_directories(pono-bin PUBLIC
   "${MUSTOOL_DIR}/mcsmus/minisat/mtl"
   "${MUSTOOL_DIR}/mcsmus/glucose/core"
   "${MUSTOOL_DIR}/mcsmus/glucose/simp"
-  "${MUSTOOL_DIR}/deps/z3/src/api/c++"
 )
 
 target_link_libraries(pono-bin PUBLIC pono-lib)
