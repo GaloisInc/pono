@@ -91,7 +91,8 @@ enum optionIndex
   KIND_NO_IND_CHECK_PROPERTY,
   KIND_ONE_TIME_BASE_CHECK,
   KIND_BOUND_STEP,
-  MUS_ATOMIC_INIT
+  MUS_ATOMIC_INIT,
+  MUS_IGNORE_YOSYS_INTERNAL_NETNAMES
 };
 
 struct Arg : public option::Arg
@@ -596,6 +597,15 @@ const option::Descriptor usage[] = {
   "constraints as a single MUS constraint. "
   "(default: false)"
   },
+{ MUS_IGNORE_YOSYS_INTERNAL_NETNAMES,
+  0,
+  "",
+  "--mus-ignore-yosys-internal-netnames",
+  Arg::None,
+  "  --mus-ignore-yosys-internal-netnames \tDon't include '$'-prefixed symbols in"
+  "the MUS constraint set"
+  "(default: true)"
+  },
 { 0, 0, 0, 0, 0, 0 },
 };
 /*********************************** end Option Handling setup
@@ -790,6 +800,7 @@ ProverResult PonoOptions::parse_and_set_options(int argc,
 	    throw PonoException("--kind-bound-step must be greater than 0");
 	  break;
         case MUS_ATOMIC_INIT: mus_atomic_init_ = true; break;
+        case MUS_IGNORE_YOSYS_INTERNAL_NETNAMES: mus_ignore_yosys_internal_netnames_ = true; break;
         case UNKNOWN_OPTION:
           // not possible because Arg::Unknown returns ARG_ILLEGAL
           // which aborts the parse with an error

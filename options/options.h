@@ -152,7 +152,9 @@ class PonoOptions
         kind_no_ind_check_property_(default_kind_no_ind_check_property_),
         kind_one_time_base_check_(default_kind_one_time_base_check_),
         kind_bound_step_(default_kind_bound_step_),
-        mus_atomic_init_(default_mus_atomic_init_)
+        mus_atomic_init_(default_mus_atomic_init_),
+        mus_ignore_yosys_internal_netnames_(default_mus_ignore_yosys_internal_netnames_)
+
   {
   }
 
@@ -295,6 +297,8 @@ class PonoOptions
   unsigned kind_bound_step_;
   // MUS Engine: treat the conjunction of all init constraints as a single MUS constraint
   bool mus_atomic_init_;
+  // MUS Engine: don't include '$'-prefixed symbols in the MUS constraint set
+  bool mus_ignore_yosys_internal_netnames_;
 
 private:
   // Default options
@@ -364,6 +368,7 @@ private:
   static const bool default_kind_one_time_base_check_ = false;
   static const unsigned default_kind_bound_step_ = 1;
   static const bool default_mus_atomic_init_ = false;
+  static const bool default_mus_ignore_yosys_internal_netnames_ = true;
 };
 
 // Useful functions for printing etc...
