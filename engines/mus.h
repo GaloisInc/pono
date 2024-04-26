@@ -47,6 +47,7 @@ private:
   void assertControlEquality(const smt::Term& controlVar, const smt::Term& constraint);
   std::vector<smt::Term> musAsOrigTerms(MUS mus);
   void boolectorAliasCleanup(string fname);
+  static bool isYosysInternalNetname(smt::Term t);
 };  // class Mus
 
 }  // namespace pono
