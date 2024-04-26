@@ -297,7 +297,9 @@ class PonoOptions
   unsigned kind_bound_step_;
   // MUS Engine: treat the conjunction of all init constraints as a single MUS constraint
   bool mus_atomic_init_;
-  // MUS Engine: Include '$'-prefixed symbols in the MUS constraint set
+  // MUS Engine: During synthesis, Yosys introduces internal ('$'-prefixed) identifiers
+  // that do not have a RTL-level correspondant. Include constraints corresponding to
+  // these internal identifiers in the MUS constraint set
   bool mus_include_yosys_internal_netnames_;
 
 private:
