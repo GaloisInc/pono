@@ -158,7 +158,7 @@ namespace pono {
         }
       }
       Term t = unrollUntilBound(tc, k);
-      if (options_.mus_ignore_yosys_internal_netnames_ && id->to_string().rfind('$', 0) == 0) {
+      if (!options_.mus_include_yosys_internal_netnames_ && id->to_string().rfind('$', 0) == 0) {
         solver_->assert_formula(t);
       } else {
         transIdToConjunct.insert({id, t});
