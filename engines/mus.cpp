@@ -157,7 +157,12 @@ namespace pono {
           id = lhs;
         }
       }
-      transIdToConjunct.insert({id, unrollUntilBound(tc, k)});
+      Term t = unrollUntilBound(tc, k);
+      if (!options_.mus_include_yosys_internal_netnames_ && isYosysInternalNetname(id)) {
+        solver_->assert_formula(t);
+      } else {
+        transIdToConjunct.insert({id, t});
+      }
     }
 
     for (auto &ic: initConjuncts) {
@@ -204,5 +209,11 @@ namespace pono {
     }
     return terms;
   }
+
+  bool Mus::isYosysInternalNetname(Term t)
+  {
+    return t->is_symbol() && t->to_string().rfind('$', 0) == 0;
+  }
+
 
 }  // namespace pono
