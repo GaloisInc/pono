@@ -92,7 +92,8 @@ enum optionIndex
   KIND_ONE_TIME_BASE_CHECK,
   KIND_BOUND_STEP,
   MUS_ATOMIC_INIT,
-  MUS_INCLUDE_YOSYS_INTERNAL_NETNAMES
+  MUS_INCLUDE_YOSYS_INTERNAL_NETNAMES,
+  MUS_DUMP_SMT2
 };
 
 struct Arg : public option::Arg
@@ -606,6 +607,14 @@ const option::Descriptor usage[] = {
   "the MUS constraint set "
   "(default: false)"
   },
+  { MUS_DUMP_SMT2,
+  0,
+  "",
+  "mus-dump-smt2",
+  Arg::None,
+  "  --mus-dump-smt2 \toutput the smt2 query being sent to MUST to a file "
+  "(default: false)"
+  },
 { 0, 0, 0, 0, 0, 0 },
 };
 /*********************************** end Option Handling setup
@@ -801,6 +810,7 @@ ProverResult PonoOptions::parse_and_set_options(int argc,
 	  break;
         case MUS_ATOMIC_INIT: mus_atomic_init_ = true; break;
         case MUS_INCLUDE_YOSYS_INTERNAL_NETNAMES: mus_include_yosys_internal_netnames_ = true; break;
+        case MUS_DUMP_SMT2: mus_dump_smt2_ = true; break;
         case UNKNOWN_OPTION:
           // not possible because Arg::Unknown returns ARG_ILLEGAL
           // which aborts the parse with an error

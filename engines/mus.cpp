@@ -1,6 +1,6 @@
 
 #include "mus.h"
-#include "smt/available_solvers.h"
+#include <smt-switch/boolector_factory.h>
 #include <regex>
 #include "utils/logger.h"
 
@@ -70,7 +70,9 @@ namespace pono {
 
   void Mus::assertControlEquality(const Term& controlVar, const Term& constraint)
   {
-    solver_->assert_formula(solver_->make_term(PrimOp::Equal, controlVar, constraint));
+    Term t = solver_->make_term(PrimOp::Equal, controlVar, constraint);
+    solver_->assert_formula(t);
+    assertions.push_back(t);
   }
 
   Term Mus::makeConjunction(TermVec ts)
@@ -160,6 +162,7 @@ namespace pono {
       Term t = unrollUntilBound(tc, k);
       if (!options_.mus_include_yosys_internal_netnames_ && isYosysInternalNetname(id)) {
         solver_->assert_formula(t);
+        assertions.push_back(t);
       } else {
         transIdToConjunct.insert({id, t});
       }
@@ -191,6 +194,21 @@ namespace pono {
     Term specCv = makeControlVar(ConstraintType::SPEC, spec);
     Term negSpec = solver_->make_term(PrimOp::Not, unrollUntilBound(spec, k + 1));
     assertControlEquality(specCv, negSpec);
+
+    if (options_.mus_dump_smt2_) {
+      // LoggingSolver does not support dump_smt2, so we transfer all of our
+      // assertions to a new BoolectorSolver
+      SmtSolver bs = BoolectorSolverFactory::create(false);
+      bs->set_opt("rewrite-level", "0");
+      TermTranslator tt = TermTranslator(bs);
+      for(auto & a: assertions) {
+        bs->assert_formula(tt.transfer_term(a));
+      }
+      for(auto & cv: controlVars) {
+        bs->assert_formula(tt.transfer_term(cv));
+      }
+      bs->dump_smt2("mus_query.smt2");
+    }
 
     return Master(solver_, controlVars, "remus");
   }

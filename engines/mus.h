@@ -36,6 +36,7 @@ private:
     {SPEC, "SPEC"}
   };
   smt::TermVec controlVars;
+  smt::TermVec assertions;
   void assert_formula(smt::Term t, smt::TermTranslator tt);
   smt::UnorderedTermSet extractTopLevelConjuncts(smt::Term conjunction);
   smt::Term unrollUntilBound(smt::Term t, int k);
