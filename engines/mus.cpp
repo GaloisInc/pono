@@ -254,6 +254,9 @@ namespace pono {
         terms.push_back(controlVars[i]);
       }
     }
+    std::sort(terms.begin(), terms.end(), [](const Term & a, const Term & b) {
+      return a->to_string() < b->to_string();
+    });
     return terms;
   }
 
