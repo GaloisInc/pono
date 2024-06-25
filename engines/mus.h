@@ -45,6 +45,7 @@ private:
   smt::Term makeControlVar(string id);
   smt::Term makeControlVar(ConstraintType type);
   smt::Term makeControlVar(ConstraintType type, smt::Term t);
+  smt::Term makeControlVar(ConstraintType type, string s);
   void assertControlEquality(const smt::Term& controlVar, const smt::Term& constraint);
   std::vector<smt::Term> musAsOrigTerms(MUS mus);
   void boolectorAliasCleanup(string fname);

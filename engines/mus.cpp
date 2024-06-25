@@ -68,6 +68,11 @@ namespace pono {
     return makeControlVar(constraintTypeToStr[type] + "_" + s);
   }
 
+  Term Mus::makeControlVar(ConstraintType type, const string s)
+  {
+    return makeControlVar(constraintTypeToStr[type] + "_" + s);
+  }
+
   void Mus::assertControlEquality(const Term& controlVar, const Term& constraint)
   {
     Term t = solver_->make_term(PrimOp::Equal, controlVar, constraint);
@@ -95,7 +100,6 @@ namespace pono {
     }
     return conjuncts;
   }
-
 
   /*
    * Construct a MUST Master object initialized with our MUS query in
@@ -146,17 +150,17 @@ namespace pono {
 
     /*
      * If the conjunct encodes a state update constraint (i.e. of form
-     * <stateVar>.next = ...), then uses that state variable's id for the
+     * <stateVar>.next = ...), then use that state variable's id for the
      * control var symbol. Otherwise use the conjunct's to_string as an
      * identifier.
      */
-    UnorderedTermMap transIdToConjunct;
+    unordered_map<string, Term> transIdToConjunct;
     for (auto &tc: transConjuncts) {
       Term id = tc;
       if (tc->get_op() == PrimOp::Equal) {
         Term lhs = *tc->begin();
         if (ts_.is_next_var(lhs)) {
-          id = lhs;
+          id = ts_.curr(lhs);
         }
       }
       Term t = unrollUntilBound(tc, k);
@@ -164,7 +168,30 @@ namespace pono {
         solver_->assert_formula(t);
         assertions.push_back(t);
       } else {
-        transIdToConjunct.insert({id, t});
+        transIdToConjunct.insert({id->to_string(), t});
+      }
+    }
+
+    if (!options_.mus_combine_suffix_.empty()) {
+      /*
+       * Conjoin TRANS constraints that are identical up to suffix matching the
+       * supplied regular expression.
+       */
+      std::multimap<string, Term> mm;
+      for (auto & [id, tc] : unordered_map(transIdToConjunct)) {
+        smatch m;
+        regex r(std::regex("(.*)" + options_.mus_combine_suffix_));
+        if (regex_search(id, m, r)) {
+          mm.insert({m[1], tc});
+          transIdToConjunct.erase(id);
+        }
+      }
+      for (auto & [id, tc] : mm) {
+        if (transIdToConjunct.find(id) == transIdToConjunct.end()) {
+          transIdToConjunct[id] = tc;
+        } else {
+          transIdToConjunct[id] = solver_->make_term(And, transIdToConjunct[id], tc);
+        }
       }
     }
 
@@ -196,8 +223,10 @@ namespace pono {
     assertControlEquality(specCv, negSpec);
 
     if (options_.mus_dump_smt2_) {
-      // LoggingSolver does not support dump_smt2, so we transfer all of our
-      // assertions to a new BoolectorSolver
+      /*
+       * LoggingSolver does not support dump_smt2, so we transfer all of our
+       * assertions to a new BoolectorSolver
+       */
       SmtSolver bs = BoolectorSolverFactory::create(false);
       bs->set_opt("rewrite-level", "0");
       TermTranslator tt = TermTranslator(bs);
