@@ -18,6 +18,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <regex>
 #include "optionparser.h"
 #include "utils/exceptions.h"
 
@@ -93,6 +94,7 @@ enum optionIndex
   KIND_BOUND_STEP,
   MUS_ATOMIC_INIT,
   MUS_INCLUDE_YOSYS_INTERNAL_NETNAMES,
+  MUS_COMBINE_SUFFIX,
   MUS_DUMP_SMT2
 };
 
@@ -125,6 +127,19 @@ struct Arg : public option::Arg
     if (msg)
       printError("Option '", option, "' requires a non-empty argument\n");
     return option::ARG_ILLEGAL;
+  }
+
+  static option::ArgStatus Regex(const option::Option & option, bool msg)
+  {
+    if (NonEmpty(option, msg) != option::ARG_OK) return option::ARG_ILLEGAL;
+    try {
+      std::regex r(std::string(option.arg));
+    } catch (std::regex_error&) {
+      if (msg)
+        printError("Option '", option, "' requires a valid regex\n");
+      return option::ARG_ILLEGAL;
+    }
+    return option::ARG_OK;
   }
 };
 
@@ -607,6 +622,14 @@ const option::Descriptor usage[] = {
   "the MUS constraint set "
   "(default: false)"
   },
+  { MUS_COMBINE_SUFFIX,
+  0,
+  "",
+  "mus-combine-suffix",
+  Arg::Regex,
+  "  --mus-combine-suffix \tCombine contraints corresponding to terms that"
+  "are identical up to a suffix matching the supplied regular expression"
+  },
   { MUS_DUMP_SMT2,
   0,
   "",
@@ -633,6 +656,7 @@ const std::unordered_set<Engine> ic3_variants_set({ IC3_BOOL,
 const std::unordered_set<Engine> & ic3_variants() { return ic3_variants_set; }
 
 const std::string PonoOptions::default_profiling_log_filename_ = "";
+const std::string PonoOptions::default_mus_combine_suffix_ = "";
 
 Engine PonoOptions::to_engine(std::string s)
 {
@@ -810,6 +834,7 @@ ProverResult PonoOptions::parse_and_set_options(int argc,
 	  break;
         case MUS_ATOMIC_INIT: mus_atomic_init_ = true; break;
         case MUS_INCLUDE_YOSYS_INTERNAL_NETNAMES: mus_include_yosys_internal_netnames_ = true; break;
+        case MUS_COMBINE_SUFFIX: mus_combine_suffix_ = opt.arg;
         case MUS_DUMP_SMT2: mus_dump_smt2_ = true; break;
         case UNKNOWN_OPTION:
           // not possible because Arg::Unknown returns ARG_ILLEGAL

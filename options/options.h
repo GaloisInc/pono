@@ -154,6 +154,7 @@ class PonoOptions
         kind_bound_step_(default_kind_bound_step_),
         mus_atomic_init_(default_mus_atomic_init_),
         mus_include_yosys_internal_netnames_(default_mus_include_yosys_internal_netnames_),
+        mus_combine_suffix_(default_mus_combine_suffix_),
         mus_dump_smt2_(default_mus_dump_smt2)
   {
   }
@@ -301,6 +302,12 @@ class PonoOptions
   // that do not have a RTL-level correspondant. Include constraints corresponding to
   // these internal identifiers in the MUS constraint set
   bool mus_include_yosys_internal_netnames_;
+  // MUS Engine: Combine contraints corresponding to terms that are identical up
+  // to a suffix matching the supplied regular expression. When reasoning over
+  // an input model that encodes a hyperproeprty over a self-composed program,
+  // this enables combining all instances (copies) of a source-level compononent
+  // together as an atomic constraint.
+  std::string mus_combine_suffix_;
   // MUS Engine: output the smt2 query being sent to MUST to a file
   bool mus_dump_smt2_;
 
@@ -373,6 +380,7 @@ private:
   static const unsigned default_kind_bound_step_ = 1;
   static const bool default_mus_atomic_init_ = false;
   static const bool default_mus_include_yosys_internal_netnames_ = false;
+  static const std::string default_mus_combine_suffix_;
   static const bool default_mus_dump_smt2 = false;
 };
 
