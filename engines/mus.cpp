@@ -68,9 +68,9 @@ namespace pono {
     return makeControlVar(type, s);
   }
 
-  Term Mus::makeControlVar(ConstraintType type, const string s)
+  Term Mus::makeControlVar(ConstraintType type, const string suffix)
   {
-    return makeControlVar(constraintTypeToStr[type] + "_" + s);
+    return makeControlVar(constraintTypeToStr[type] + "_" + suffix);
   }
 
   void Mus::assertControlEquality(const Term& controlVar, const Term& constraint)
