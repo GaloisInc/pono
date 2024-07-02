@@ -65,7 +65,7 @@ namespace pono {
     if (type == INVAR) {
       s = std::to_string(t->hash());
     }
-    return makeControlVar(constraintTypeToStr[type] + "_" + s);
+    return makeControlVar(type, s);
   }
 
   Term Mus::makeControlVar(ConstraintType type, const string s)
