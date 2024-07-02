@@ -178,9 +178,9 @@ namespace pono {
        * supplied regular expression.
        */
       std::multimap<string, Term> mm;
+      regex r(std::regex("(.*)" + options_.mus_combine_suffix_));
       for (auto & [id, tc] : unordered_map(transIdToConjunct)) {
         smatch m;
-        regex r(std::regex("(.*)" + options_.mus_combine_suffix_));
         if (regex_search(id, m, r)) {
           mm.insert({m[1], tc});
           transIdToConjunct.erase(id);
