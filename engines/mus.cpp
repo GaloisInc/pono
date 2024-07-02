@@ -73,13 +73,6 @@ namespace pono {
     return makeControlVar(constraintTypeToStr[type] + "_" + suffix);
   }
 
-  void Mus::assertControlEquality(const Term& controlVar, const Term& constraint)
-  {
-    Term t = solver_->make_term(PrimOp::Equal, controlVar, constraint);
-    solver_->assert_formula(t);
-    assertions.push_back(t);
-  }
-
   Term Mus::makeConjunction(TermVec ts)
   {
     return ts.size() == 1 ? ts[0] : solver_->make_term(PrimOp::And, ts);
@@ -99,6 +92,28 @@ namespace pono {
       conjuncts.insert(t);
     }
     return conjuncts;
+  }
+
+  /*
+   * Assert an atomic constraint that MUST can toggle during UNSAT core
+   * minimization.
+   */
+  void Mus::musAssert(Term controlVar, Term constraint)
+  {
+    Term t = solver_->make_term(PrimOp::Equal, controlVar, constraint);
+    solver_->assert_formula(t);
+    assertions.push_back(t);
+  }
+
+  /*
+   * Assert a constraint to the context in which MUST makes its satisfiability
+   * determination. These constraints are not toggleable during UNSAT core
+   * minimization.
+   */
+  void Mus::contextualAssert(Term constraint)
+  {
+    solver_->assert_formula(constraint);
+    assertions.push_back(constraint);
   }
 
   /*
@@ -165,8 +180,7 @@ namespace pono {
       }
       Term t = unrollUntilBound(tc, k);
       if (!options_.mus_include_yosys_internal_netnames_ && isYosysInternalNetname(id)) {
-        solver_->assert_formula(t);
-        assertions.push_back(t);
+        contextualAssert(t);
       } else {
         transIdToConjunct.insert({id->to_string(), t});
       }
@@ -203,24 +217,24 @@ namespace pono {
       } else {
         cv = makeControlVar(ConstraintType::INIT, ic);
       }
-      assertControlEquality(cv, unroller_.at_time(ic, 0));
+      musAssert(cv, unroller_.at_time(ic, 0));
     }
 
     for (auto &tc: transIdToConjunct) {
       Term cv = makeControlVar(ConstraintType::TRANS, tc.first);
-      assertControlEquality(cv, tc.second);
+      musAssert(cv, tc.second);
     }
 
     for(auto &c: ts_.constraints()) {
       Term cv = makeControlVar(ConstraintType::INVAR, c.first);
-      assertControlEquality(cv, unrollUntilBound(c.first, k + 1));
+      musAssert(cv, unrollUntilBound(c.first, k + 1));
     }
 
     Term spec = orig_property_.prop();
     logger.log(0, "Checking Spec: {}", spec);
     Term specCv = makeControlVar(ConstraintType::SPEC, spec);
     Term negSpec = solver_->make_term(PrimOp::Not, unrollUntilBound(spec, k + 1));
-    assertControlEquality(specCv, negSpec);
+    musAssert(specCv, negSpec);
 
     if (options_.mus_dump_smt2_) {
       /*
