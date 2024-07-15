@@ -37,15 +37,16 @@ private:
   };
   smt::TermVec controlVars;
   smt::TermVec assertions;
-  void assert_formula(smt::Term t, smt::TermTranslator tt);
   smt::UnorderedTermSet extractTopLevelConjuncts(smt::Term conjunction);
+  void musAssert(smt::Term controlVar, smt::Term constraint);
+  void contextualAssert(smt::Term constraint);
   smt::Term unrollUntilBound(smt::Term t, int k);
   smt::Term unrollOrigTerm(smt::Term t, int k);
   smt::Term makeConjunction(smt::TermVec ts);
   smt::Term makeControlVar(string id);
   smt::Term makeControlVar(ConstraintType type);
   smt::Term makeControlVar(ConstraintType type, smt::Term t);
-  void assertControlEquality(const smt::Term& controlVar, const smt::Term& constraint);
+  smt::Term makeControlVar(ConstraintType type, string s);
   std::vector<smt::Term> musAsOrigTerms(MUS mus);
   void boolectorAliasCleanup(string fname);
   static bool isYosysInternalNetname(smt::Term t);
