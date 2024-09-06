@@ -93,7 +93,7 @@ vector<string> getBenchmarks()
   };
   vector<string> benchmarks;
   for (const auto & testVector: testVectors) {
-    benchmarks.push_back(HWMCC + testVector);
+    benchmarks.push_back(HWMCC + "/" + testVector);
   }
   return benchmarks;
 }
