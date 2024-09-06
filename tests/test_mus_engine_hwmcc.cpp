@@ -30,7 +30,7 @@ const string HWMCC = std::string(getenv("QUIIP_MODELS_ROOT")) + "/vectors/hwmcc"
 
 vector<string> getBenchmarks()
 {
-  const vector<string> testDirs = {
+  const vector<string> testVectors = {
     // == Bit Vector ==
     "anderson.3.prop1-back-serstep.btor2",
     "brp2.2.prop1-func-interl.btor2",
@@ -92,12 +92,8 @@ vector<string> getBenchmarks()
     "simple-stack-pred1.btor"
   };
   vector<string> benchmarks;
-  for (const auto & testDir: testDirs) {
-    for (const auto & entry : std::filesystem::directory_iterator(fs::path(HWMCC + testDir))) {
-      if (entry.is_regular_file()) {
-        benchmarks.push_back(entry.path());
-      }
-    }
+  for (const auto & testVector: testVectors) {
+    benchmarks.push_back(HWMCC + testVector);
   }
   return benchmarks;
 }
