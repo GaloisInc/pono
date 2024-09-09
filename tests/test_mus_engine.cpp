@@ -28,25 +28,25 @@ class MusEngineTestsSat : public ::testing::Test,
 {
 };
 
-const string QUIIP_MODELS = getenv("QUIIP_MODELS_ROOT");
+const string QUIIP_MODELS = std::string(getenv("QUIIP_MODELS_ROOT")) + "/vectors";
 
 const vector<tuple<string, int, int>> quiip_models_unsat({
   // BTOR2
-  tuple("test/btor2/count2/count2.btor2", 5, 1),
-  tuple("test/btor2/count2/count2mus.btor2", 5, 2),
-  tuple("test/btor2/btor2_paper_c_example/example.btor2", 5, 1),
+  tuple("count2.btor2", 5, 1),
+  tuple("count2mus.btor2", 5, 2),
+  tuple("example.btor2", 5, 1),
   // SMV
-  tuple("test/smv/altitude_switch_model/altitude_switch_model.smv", 5, 2),
-  tuple("test/smv/simple_counter/simple_counter.smv", 5, 1),
-  tuple("test/smv/count2/count2.smv", 5, 1),
-  tuple("test/smv/count2/count2mus.smv", 5, 2),
-  tuple("test/smv/unreachable_states/unreachable_states.smv", 100, 1)
+  tuple("altitude_switch_model.smv", 5, 2),
+  tuple("simple_counter.smv", 5, 1),
+  tuple("count2.smv", 5, 1),
+  tuple("count2mus.smv", 5, 2),
+  tuple("unreachable_states.smv", 100, 1)
 });
 
 const vector<tuple<string, int>> quiip_models_btor2_sat({
-  tuple("test/btor2/count2/count2.btor2", 10),
-  tuple("test/btor2/count2/count2mus.btor2", 10),
-  tuple("test/btor2/btor2_paper_c_example/example.btor2", 10)
+  tuple("count2.btor2", 10),
+  tuple("count2mus.btor2", 10),
+  tuple("example.btor2", 10)
 });
 
 // TEST_P(MusEngineTestsUnsat, Unsat)
