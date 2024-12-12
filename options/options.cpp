@@ -95,7 +95,8 @@ enum optionIndex
   MUS_ATOMIC_INIT,
   MUS_INCLUDE_YOSYS_INTERNAL_NETNAMES,
   MUS_COMBINE_SUFFIX,
-  MUS_DUMP_SMT2
+  MUS_DUMP_SMT2,
+  MUS_APPLY_TSEITIN
 };
 
 struct Arg : public option::Arg
@@ -636,6 +637,14 @@ const option::Descriptor usage[] = {
   "mus-dump-smt2",
   Arg::None,
   "  --mus-dump-smt2 \toutput the smt2 query being sent to MUST to a file "
+  "(default: false)"
+  },
+  { MUS_APPLY_TSEITIN,
+  0,
+  "",
+  "mus-apply-tseitin",
+  Arg::None,
+  "  --mus-apply-tseitin \tapply the Tseitin transformation to MUS clauses"
   "(default: false)"
   },
 { 0, 0, 0, 0, 0, 0 },
