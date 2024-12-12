@@ -68,5 +68,6 @@ pono_add_test(test_promote_inputvars)
 pono_add_test(test_partial_model)
 pono_add_test(test_mus_engine)
 pono_add_test(test_mus_engine_hwmcc)
+pono_add_test(test_mus_tseitin)
 
 add_subdirectory(encoders)
