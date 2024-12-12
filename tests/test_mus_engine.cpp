@@ -28,7 +28,7 @@ class MusEngineTestsSat : public ::testing::Test,
 {
 };
 
-const string SPA_COMB_DIR = std::string(getenv("QUIIP_MODELS_ROOT")) + "/vectors";
+const string VECTORS_DIR = std::string(getenv("QUIIP_MODELS_ROOT")) + "/vectors";
 
 const vector<tuple<string, int, int>> quiip_models_unsat({
   // BTOR2
@@ -52,7 +52,7 @@ const vector<tuple<string, int>> quiip_models_btor2_sat({
 TEST_P(MusEngineTestsUnsat, Unsat)
 {
   SmtSolver s = make_shared<LoggingSolver>(create_solver(SolverEnum::BTOR));
-  string filename = SPA_COMB_DIR + "/" + get<0>(GetParam());
+  string filename = VECTORS_DIR + "/" + get<0>(GetParam());
   string file_ext = get<0>(GetParam()).substr(get<0>(GetParam()).find_last_of(".") + 1);
   TransitionSystem ts;
   Term prop;
@@ -81,7 +81,7 @@ TEST_P(MusEngineTestsSat, Sat)
 {
   SmtSolver s = make_shared<LoggingSolver>(create_solver(SolverEnum::BTOR));
   FunctionalTransitionSystem fts(s);
-  string filename = SPA_COMB_DIR + "/" + get<0>(GetParam());
+  string filename = VECTORS_DIR + "/" + get<0>(GetParam());
   BTOR2Encoder be(filename, fts);
   EXPECT_EQ(be.propvec().size(), 1);
   Property p(fts.solver(), be.propvec()[0]);
