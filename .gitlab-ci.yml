@@ -16,8 +16,10 @@ build_and_test:
      - cd build
      - make -j${nproc}
      # Test pono with quiip-models test cases
+     - QUIIP_MODELS_BRANCH=${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME:-main}
+     - echo "Cloning quiip-models@$CI_COMMIT_SHA"
      - git clone
-       -b ${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME:-main}
+       -b $QUIIP_MODELS_BRANCH
        https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab-ext.galois.com/quiip/quiip-models.git
      - export QUIIP_MODELS_ROOT=`pwd`/quiip-models
      - mkdir $QUIIP_MODELS_ROOT/vectors
