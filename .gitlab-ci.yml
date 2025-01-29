@@ -1,5 +1,7 @@
 image: ubuntu:22.04
 
+
+
 build_and_test:
   script:
      - apt-get update
@@ -14,7 +16,9 @@ build_and_test:
      - cd build
      - make -j${nproc}
      # Test pono with quiip-models test cases
-     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab-ext.galois.com/quiip/quiip-models.git
+     - git clone
+       -b ${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME:-main}
+       https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab-ext.galois.com/quiip/quiip-models.git
      - export QUIIP_MODELS_ROOT=`pwd`/quiip-models
      - mkdir $QUIIP_MODELS_ROOT/vectors
      - find $QUIIP_MODELS_ROOT/test -regex '.*\.btor2?' -o -regex '.*\.smv' | xargs -I {} cp -s {} $QUIIP_MODELS_ROOT/vectors
