@@ -17,6 +17,7 @@ build_and_test:
 #     - make -j${nproc}
      # Test pono with quiip-models test cases
      - QUIIP_MODELS_BRANCH=${QUIIP_MODELS_MR_SOURCE_BRANCH:-main}
+     - echo $QUIIP_MODELS_BRANCH
      - git clone
        -b $QUIIP_MODELS_BRANCH
        https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab-ext.galois.com/quiip/quiip-models.git
