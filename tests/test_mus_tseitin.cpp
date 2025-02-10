@@ -29,7 +29,7 @@ class MUSWithTseitin : public ::testing::Test,
 {
 };
 
-const string SPA_COMB_DIR = std::string(getenv("QUIIP_MODELS_ROOT")) + "/vectors/spa_comb";
+const string SPA_COMB_DIR = std::string(getenv("QUIIP_MODELS_ROOT")) + "/vectors";
 
 const vector<tuple<string, int, int>> spa_comb_btor({
   tuple("verify_spa_comb_simplex.btor", 10, 1/* ??? */),
