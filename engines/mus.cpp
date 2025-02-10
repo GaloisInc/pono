@@ -236,6 +236,9 @@ namespace pono {
     }
 
     if (!options_.mus_combine_suffix_.empty()) {
+      if (options_.mus_apply_tseitin_) {
+        throw std::runtime_error("???");
+      }
       /*
        * Conjoin TRANS constraints that are identical up to suffix matching the
        * supplied regular expression.
