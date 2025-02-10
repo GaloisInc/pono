@@ -27,6 +27,13 @@ namespace pono {
         logger.log(0, "  {}", t);
       }
     }
+    if (tseitinVars.size() != 0) {
+      logger.log(0, "==========================================");
+      for (auto &tv: tseitinVars) {
+        logger.log(0, "{} := {}", tv, tseitinVarToConstraint[tv]);
+      }
+      logger.log(0, "==========================================");
+    }
     return ProverResult::TRUE;
   }
 
