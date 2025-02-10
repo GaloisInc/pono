@@ -36,12 +36,16 @@ private:
     {SPEC, "SPEC"}
   };
   smt::TermVec controlVars;
-  smt::TermVec assertions;
+  smt::UnorderedTermMap musAssertions;
+  smt::TermVec contextualAssertions;
+
+  smt::TermVec tseitinVars;
+  smt::UnorderedTermMap tseitinConstraintToVar;
+  smt::UnorderedTermMap tseitinVarToConstraint;
   smt::UnorderedTermSet extractTopLevelConjuncts(smt::Term conjunction);
-  void musAssert(smt::Term controlVar, smt::Term constraint);
+  void musAssert(ConstraintType ct, smt::Term cv, smt::Term constraint, int kcd);
   void contextualAssert(smt::Term constraint);
   smt::Term unrollUntilBound(smt::Term t, int k);
-  smt::Term unrollOrigTerm(smt::Term t, int k);
   smt::Term makeConjunction(smt::TermVec ts);
   smt::Term makeControlVar(string id);
   smt::Term makeControlVar(ConstraintType type);
@@ -50,6 +54,8 @@ private:
   std::vector<smt::Term> musAsOrigTerms(MUS mus);
   void boolectorAliasCleanup(string fname);
   static bool isYosysInternalNetname(smt::Term t);
+  int tseitinIdx = 0;
+  smt::Term tseitinDecompose(smt::Term t, int k);
 };  // class Mus
 
 }  // namespace pono

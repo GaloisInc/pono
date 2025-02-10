@@ -46,6 +46,45 @@ namespace pono {
     return makeConjunction(uts);
   }
 
+  Term Mus::tseitinDecompose(Term t, int k)
+  {
+    Op op = t->get_op();
+    if (op == NUM_OPS_AND_NULL) {
+      Term unrolledAtomicTerm = unrollUntilBound(t, k);
+      contextualAssert(solver_->make_term(Equal, t, unrolledAtomicTerm));
+      return t;
+    }
+    TermVec ts;
+    TermIter tIter = t->begin();
+    while (tIter != t->end()) {
+      Term tt = tseitinDecompose(*tIter, k);
+      ts.push_back(tt);
+      *tIter++;
+    }
+    Sort boolSort = solver_->make_sort(SortKind::BOOL);
+    Term tt;
+    if (op == Not || op == BVNot) {
+      tt = solver_->make_term(op, ts[0]);
+    } else if (op == Equal || op == And || op == Or || op == BVAnd || op == BVOr) {
+      tt = solver_->make_term(op, {ts[0], ts[1]});
+    } else if (op == Ite) {
+      tt = solver_->make_term(op, {ts[0], ts[1], ts[2]});
+    } else {
+      throw std::runtime_error("??? - unrecognized op: " + op.to_string());
+    }
+    if (tseitinConstraintToVar.find(tt) != tseitinConstraintToVar.end()) {
+      return tseitinConstraintToVar[tt];
+    } else {
+      Term tv = solver_->make_symbol("_tseitin_" + std::to_string(tseitinIdx), boolSort);
+      tseitinVars.push_back(tv);
+      tseitinConstraintToVar[tt] = tv;
+      tseitinVarToConstraint[tv] = tt;
+      musAssertions[makeControlVar("TSEITIN_" + std::to_string(tseitinIdx++))] =
+        solver_->make_term(PrimOp::Equal, tv, tt);
+      return tv;
+    }
+
+  }
   Term Mus::makeControlVar(string id)
   {
     Sort boolSort = solver_->make_sort(SortKind::BOOL);
@@ -98,11 +137,22 @@ namespace pono {
    * Assert an atomic constraint that MUST can toggle during UNSAT core
    * minimization.
    */
-  void Mus::musAssert(Term controlVar, Term constraint)
+  void Mus::musAssert(ConstraintType ct, Term cv, Term c, int k)
   {
-    Term t = solver_->make_term(PrimOp::Equal, controlVar, constraint);
-    solver_->assert_formula(t);
-    assertions.push_back(t);
+    Term t_u;
+    switch (ct) {
+      case INIT:
+        t_u = unroller_.at_time(c, 0);
+        break;
+      case INVAR:
+      case TRANS:
+        t_u = options_.mus_apply_tseitin_ ? tseitinDecompose(c, k) : unrollUntilBound(c, k);
+        break;
+      case SPEC:
+        t_u = solver_->make_term(Not, unrollUntilBound(c, k));
+        break;
+    }
+    musAssertions[cv] = t_u;
   }
 
   /*
@@ -113,7 +163,7 @@ namespace pono {
   void Mus::contextualAssert(Term constraint)
   {
     solver_->assert_formula(constraint);
-    assertions.push_back(constraint);
+    contextualAssertions.push_back(constraint);
   }
 
   /*
@@ -178,11 +228,10 @@ namespace pono {
           id = ts_.curr(lhs);
         }
       }
-      Term t = unrollUntilBound(tc, k);
       if (!options_.mus_include_yosys_internal_netnames_ && isYosysInternalNetname(id)) {
-        contextualAssert(t);
+        contextualAssert(unrollUntilBound(tc, k));
       } else {
-        transIdToConjunct.insert({id->to_string(), t});
+        transIdToConjunct.insert({id->to_string(), tc});
       }
     }
 
@@ -217,24 +266,29 @@ namespace pono {
       } else {
         cv = makeControlVar(ConstraintType::INIT, ic);
       }
-      musAssert(cv, unroller_.at_time(ic, 0));
+      musAssert(INIT, cv, ic, 0);
     }
 
     for (auto &tc: transIdToConjunct) {
       Term cv = makeControlVar(ConstraintType::TRANS, tc.first);
-      musAssert(cv, tc.second);
+      musAssert(TRANS, cv, tc.second, k);
     }
 
     for(auto &c: ts_.constraints()) {
       Term cv = makeControlVar(ConstraintType::INVAR, c.first);
-      musAssert(cv, unrollUntilBound(c.first, k + 1));
+      musAssert(INVAR, cv, c.first, k);
     }
 
     Term spec = orig_property_.prop();
     logger.log(0, "Checking Spec: {}", spec);
     Term specCv = makeControlVar(ConstraintType::SPEC, spec);
-    Term negSpec = solver_->make_term(PrimOp::Not, unrollUntilBound(spec, k + 1));
-    musAssert(specCv, negSpec);
+    // Term negSpec = solver_->make_term(PrimOp::Not, spec);
+    musAssert(SPEC, specCv, spec, k + 1);
+
+    for (auto &ma: musAssertions) {
+      Term e = solver_->make_term(Equal, ma.first, ma.second);
+      solver_->assert_formula(e);
+    }
 
     if (options_.mus_dump_smt2_) {
       /*
@@ -244,11 +298,15 @@ namespace pono {
       SmtSolver bs = BoolectorSolverFactory::create(false);
       bs->set_opt("rewrite-level", "0");
       TermTranslator tt = TermTranslator(bs);
-      for(auto & a: assertions) {
-        bs->assert_formula(tt.transfer_term(a));
+      for(auto & e: musAssertions) {
+        Term controlVar = e.first;
+        Term musConstraint = e.second;
+        bs->assert_formula(tt.transfer_term(controlVar));
+        Term t = solver_->make_term(PrimOp::Equal, controlVar, musConstraint);
+        bs->assert_formula(tt.transfer_term(t));
       }
-      for(auto & cv: controlVars) {
-        bs->assert_formula(tt.transfer_term(cv));
+      for(auto & ca: contextualAssertions) {
+        bs->assert_formula(tt.transfer_term(ca));
       }
       bs->dump_smt2("mus_query.smt2");
     }
