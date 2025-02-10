@@ -1,4 +1,5 @@
 #include <engines/mus.h>
+#include <modifiers/prop_monitor.h>
 
 #include <string>
 #include <tuple>
@@ -43,7 +44,9 @@ TEST_P(MUSTseitinless, Sat)
   string filename = SPA_COMB_DIR + "/" + get<0>(GetParam());
   BTOR2Encoder be(filename, fts);
   EXPECT_EQ(be.propvec().size(), 1);
-  Property p(fts.solver(), be.propvec()[0]);
+  Term prop = be.propvec()[0];
+  prop = add_prop_monitor(fts, prop);
+  Property p(fts.solver(), prop);
   PonoOptions opts = PonoOptions();
   opts.logging_smt_solver_ = true;
   Mus mus(p, fts, s, opts);
@@ -61,7 +64,9 @@ TEST_P(MUSWithTseitin, Sat)
   string filename = SPA_COMB_DIR + "/" + get<0>(GetParam());
   BTOR2Encoder be(filename, fts);
   EXPECT_EQ(be.propvec().size(), 1);
-  Property p(fts.solver(), be.propvec()[0]);
+  Term prop = be.propvec()[0];
+  prop = add_prop_monitor(fts, prop);
+  Property p(fts.solver(), prop);
   PonoOptions opts = PonoOptions();
   opts.logging_smt_solver_ = true;
   opts.mus_apply_tseitin_ = true;
