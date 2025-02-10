@@ -845,6 +845,7 @@ ProverResult PonoOptions::parse_and_set_options(int argc,
         case MUS_INCLUDE_YOSYS_INTERNAL_NETNAMES: mus_include_yosys_internal_netnames_ = true; break;
         case MUS_COMBINE_SUFFIX: mus_combine_suffix_ = opt.arg;
         case MUS_DUMP_SMT2: mus_dump_smt2_ = true; break;
+        case MUS_APPLY_TSEITIN: mus_apply_tseitin_ = true; break;
         case UNKNOWN_OPTION:
           // not possible because Arg::Unknown returns ARG_ILLEGAL
           // which aborts the parse with an error
