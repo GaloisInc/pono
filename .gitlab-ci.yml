@@ -15,3 +15,4 @@ build:
      - ./configure.sh
      - cd build
      - make -j${nproc}
+     - ctest -R test_mus
