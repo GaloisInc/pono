@@ -293,7 +293,7 @@ namespace pono {
     logger.log(0, "Checking Spec: {}", spec);
     Term specCv = makeControlVar(ConstraintType::SPEC, spec);
     // Term negSpec = solver_->make_term(PrimOp::Not, spec);
-    musAssert(SPEC, specCv, spec, k + 1);
+    musAssert(SPEC, specCv, spec, k);
 
     for (auto &ma: musAssertions) {
       Term e = solver_->make_term(Equal, ma.first, ma.second);
