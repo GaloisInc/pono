@@ -1,12 +1,12 @@
 image: ubuntu:22.04
 
-build:
+
+
+build_and_test:
   script:
      - apt-get update
      - apt-get install -y git curl build-essential cmake m4 libgmp-dev python3 pip openjdk-8-jdk
      - python3 -m pip install toml
-     - git clone https://github.com/GaloisInc/pono.git
-     - cd pono
      - ./contrib/setup-bison.sh
      - ./contrib/setup-flex.sh
      - ./contrib/setup-smt-switch.sh
@@ -15,4 +15,13 @@ build:
      - ./configure.sh
      - cd build
      - make -j${nproc}
-     - ctest -R test_mus
+     - QUIIP_MODELS_BRANCH=${QUIIP_MODELS_MR_SOURCE_BRANCH:-main}
+     - git clone
+       -b $QUIIP_MODELS_BRANCH
+       https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab-ext.galois.com/quiip/quiip-models.git
+     - export QUIIP_MODELS_ROOT=`pwd`/quiip-models
+     - mkdir $QUIIP_MODELS_ROOT/vectors
+     - find $QUIIP_MODELS_ROOT/test -regex '.*\.btor2?' -o -regex '.*\.smv' | xargs -I {} cp -s {} $QUIIP_MODELS_ROOT/vectors
+     - mkdir $QUIIP_MODELS_ROOT/vectors/hwmcc
+     - find $QUIIP_MODELS_ROOT/test/btor2/hwmcc-benchmarks -regex '.*\.btor2?' | xargs -I {} cp -s {} $QUIIP_MODELS_ROOT/vectors/hwmcc
+     - ctest -R test_mus_engine --verbose
