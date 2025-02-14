@@ -20,6 +20,14 @@ namespace pono {
   ProverResult Mus::check_until(int k)
   {
     Master m(buildMusQuery(k));
+    logger.log(1, "= MUS Assertions =");
+    for (auto &ma: musAssertions) {
+      logger.log(1, "{} <-> {}", ma.first, ma.second);
+    }
+    logger.log(1, "= Contextual Assertions =");
+    for (auto &ca: contextualAssertions) {
+      logger.log(1, "{}", ca);
+    }
     m.enumerate();
     for (int i = 0; i < m.muses.size(); i++) {
       logger.log(0, "MUS #{}", i + 1);
@@ -28,11 +36,10 @@ namespace pono {
       }
     }
     if (tseitinVars.size() != 0) {
-      logger.log(0, "==========================================");
+      logger.log(0, "= Tseitin Variables =");
       for (auto &tv: tseitinVars) {
         logger.log(0, "{} := {}", tv, tseitinVarToConstraint[tv]);
       }
-      logger.log(0, "==========================================");
     }
     return ProverResult::TRUE;
   }
