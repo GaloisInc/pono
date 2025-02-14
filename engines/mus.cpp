@@ -57,8 +57,7 @@ namespace pono {
   {
     Op op = t->get_op();
     if (op == NUM_OPS_AND_NULL) {
-      Term unrolledAtomicTerm = unrollUntilBound(t, k);
-      contextualAssert(solver_->make_term(Equal, t, unrolledAtomicTerm));
+      // Base case - cannot further decompose atomic terms
       return t;
     }
     TermVec ts;
@@ -68,7 +67,6 @@ namespace pono {
       ts.push_back(tt);
       *tIter++;
     }
-    Sort boolSort = solver_->make_sort(SortKind::BOOL);
     Term tt;
     if (op == Not || op == BVNot) {
       tt = solver_->make_term(op, ts[0]);
@@ -79,19 +77,40 @@ namespace pono {
     } else {
       throw std::runtime_error("??? - unrecognized op: " + op.to_string());
     }
-    if (tseitinConstraintToVar.find(tt) != tseitinConstraintToVar.end()) {
-      return tseitinConstraintToVar[tt];
-    } else {
-      Term tv = solver_->make_symbol("_tseitin_" + std::to_string(tseitinIdx), boolSort);
-      tseitinVars.push_back(tv);
-      tseitinConstraintToVar[tt] = tv;
-      tseitinVarToConstraint[tv] = tt;
-      musAssertions[makeControlVar("TSEITIN_" + std::to_string(tseitinIdx++))] =
-        solver_->make_term(PrimOp::Equal, tv, tt);
-      return tv;
+    Term tseitinControlVar = makeControlVar("TSEITIN_" + std::to_string(tseitinIdx++));
+    Sort boolSort = solver_->make_sort(SortKind::BOOL);
+    string tseitinVarNamePrefix = "_tseitin_";
+    string tseitinVarUntimedName = tseitinVarNamePrefix + std::to_string(tseitinIdx);
+    Term tseitinVarUntimed = solver_->make_symbol(tseitinVarUntimedName, boolSort);
+    tseitinVars.push_back(tseitinVarUntimed);
+    tseitinVarToConstraint[tseitinVarUntimed] = tt;
+    // Unroll the untimed Tseitin variable to `k` ticks
+    TermVec tseitinVarAtAllTicksVec;
+    for (int i = 0; i < k; i++) {
+      Term tvAtTickI = solver_->make_symbol(tseitinVarUntimedName + "@" + std::to_string(i), boolSort);
+      tseitinVarAtAllTicksVec.push_back(tvAtTickI);
     }
-
+    Term tseitinVarAtAllTicks = makeConjunction(tseitinVarAtAllTicksVec);
+    TermVec origTermDecomposedAndUnrolledVec;
+    for (int i = 0; i < k; i++) {
+      // Manually unroll Tseitin variable instances because pono's unroller
+      // will only unroll variables present in the original model.
+      Term untimedTerm = solver_->make_term(PrimOp::Equal, tseitinVarUntimed, tt);
+      UnorderedTermMap termSubMapForI;
+      for ( auto & tv: tseitinVars) {
+        string tseitinVarAtTickIName = tv->to_string() + "@" + std::to_string(i);
+        termSubMapForI[tv] = solver_->get_symbol(tseitinVarAtTickIName);
+      }
+      // Original term with original variables and Tseitin variables unrolled
+      Term decomposedTermAtTickI = unroller_.at_time(solver_->substitute(untimedTerm, termSubMapForI), i);
+      origTermDecomposedAndUnrolledVec.push_back(decomposedTermAtTickI);
+    }
+    Term origTermDecomposedAndUnrolled = makeConjunction(origTermDecomposedAndUnrolledVec);
+    musAssertions[tseitinControlVar] = origTermDecomposedAndUnrolled;
+    contextualAssert(solver_->make_term(Equal, tseitinVarUntimed, tseitinVarAtAllTicks));
+    return tseitinVarUntimed;
   }
+
   Term Mus::makeControlVar(string id)
   {
     Sort boolSort = solver_->make_sort(SortKind::BOOL);
