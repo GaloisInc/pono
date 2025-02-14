@@ -40,7 +40,6 @@ private:
   smt::TermVec contextualAssertions;
 
   smt::TermVec tseitinVars;
-  smt::UnorderedTermMap tseitinConstraintToVar;
   smt::UnorderedTermMap tseitinVarToConstraint;
   smt::UnorderedTermSet extractTopLevelConjuncts(smt::Term conjunction);
   void musAssert(ConstraintType ct, smt::Term cv, smt::Term constraint, int kcd);
