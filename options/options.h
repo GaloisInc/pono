@@ -155,7 +155,8 @@ class PonoOptions
         mus_atomic_init_(default_mus_atomic_init_),
         mus_include_yosys_internal_netnames_(default_mus_include_yosys_internal_netnames_),
         mus_combine_suffix_(default_mus_combine_suffix_),
-        mus_dump_smt2_(default_mus_dump_smt2)
+        mus_dump_smt2_(default_mus_dump_smt2),
+        mus_apply_tseitin_(default_mus_apply_tseitin_)
   {
   }
 
@@ -310,6 +311,8 @@ class PonoOptions
   std::string mus_combine_suffix_;
   // MUS Engine: output the smt2 query being sent to MUST to a file
   bool mus_dump_smt2_;
+  // MUS Engine: apply the Tseitin transformation to MUS clauses
+  bool mus_apply_tseitin_;
 
 private:
   // Default options
@@ -382,6 +385,7 @@ private:
   static const bool default_mus_include_yosys_internal_netnames_ = false;
   static const std::string default_mus_combine_suffix_;
   static const bool default_mus_dump_smt2 = false;
+  static const bool default_mus_apply_tseitin_ = false;
 };
 
 // Useful functions for printing etc...
