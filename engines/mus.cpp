@@ -107,11 +107,7 @@ namespace pono {
 
   Term Mus::makeControlVar(ConstraintType type, const Term t)
   {
-    string s = t->to_string();
-    if (type == INVAR) {
-      s = std::to_string(t->hash());
-    }
-    return makeControlVar(type, s);
+    return makeControlVar(type, t->to_string());
   }
 
   Term Mus::makeControlVar(ConstraintType type, const string suffix)
