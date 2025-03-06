@@ -69,10 +69,23 @@ namespace pono {
     }
     TermVec ts;
     TermIter tIter = t->begin();
-    while (tIter != t->end()) {
-      Term tt = tseitinDecompose(*tIter, k);
-      ts.push_back(tt);
-      *tIter++;
+    if (op == Ite) {
+      while (tIter != t->end()) {
+        if (tIter == t->begin()) {
+          ts.push_back(*tIter);
+          *tIter++;
+        } else {
+          Term tt = tseitinDecompose(*tIter, k);
+          ts.push_back(tt);
+          *tIter++;
+        }
+      }
+    } else {
+      while (tIter != t->end()) {
+        Term tt = tseitinDecompose(*tIter, k);
+        ts.push_back(tt);
+        *tIter++;
+      }
     }
     Term tt;
     if (op == Not || op == BVNot) {
