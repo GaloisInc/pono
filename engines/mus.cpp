@@ -97,10 +97,10 @@ namespace pono {
     } else {
       throw std::runtime_error("??? - unrecognized op: " + op.to_string());
     }
-    Term tseitinControlVar = makeControlVar("TSEITIN_" + std::to_string(tseitinIdx++));
+    Term tseitinControlVar = makeControlVar("TSEITIN_" + std::to_string(tseitinIdx));
     Sort boolSort = solver_->make_sort(SortKind::BOOL);
     string tseitinVarNamePrefix = "_tseitin_";
-    string tseitinVarUntimedName = tseitinVarNamePrefix + std::to_string(tseitinIdx);
+    string tseitinVarUntimedName = tseitinVarNamePrefix + std::to_string(tseitinIdx++);
     Term tseitinVarUntimed = solver_->make_symbol(tseitinVarUntimedName, boolSort);
     tseitinVars.push_back(tseitinVarUntimed);
     tseitinVarToConstraint[tseitinVarUntimed] = tt;
