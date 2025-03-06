@@ -22,6 +22,7 @@ build_and_test:
      - export QUIIP_MODELS_ROOT=`pwd`/quiip-models
      - mkdir $QUIIP_MODELS_ROOT/vectors
      - find $QUIIP_MODELS_ROOT/test -regex '.*\.btor2?' -o -regex '.*\.smv' | xargs -I {} cp -s {} $QUIIP_MODELS_ROOT/vectors
+     - find $QUIIP_MODELS_ROOT/hardware_models/spa_comb -regex '.*\.btor2?' | xargs -I {} cp -s {} $QUIIP_MODELS_ROOT/vectors
      - mkdir $QUIIP_MODELS_ROOT/vectors/hwmcc
      - find $QUIIP_MODELS_ROOT/test/btor2/hwmcc-benchmarks -regex '.*\.btor2?' | xargs -I {} cp -s {} $QUIIP_MODELS_ROOT/vectors/hwmcc
      - ctest -R test_mus --verbose
