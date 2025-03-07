@@ -32,9 +32,9 @@ class MUSWithTseitin : public ::testing::Test,
 const string SPA_COMB_DIR = std::string(getenv("QUIIP_MODELS_ROOT")) + "/vectors";
 
 const vector<tuple<string, int, int>> spa_comb_btor({
-  tuple("verify_spa_comb_simplex.btor", 10, 1),
-  tuple("verify_spa_comb_duplex1.btor", 10, 1),
-  tuple("verify_spa_comb_duplex2.btor", 10, 2)
+  tuple("verify_spa_comb_simplex.btor", 10, 2),
+  tuple("verify_spa_comb_duplex1.btor", 10, 16),
+  tuple("verify_spa_comb_duplex2.btor", 10, 4)
 });
 
 TEST_P(MUSTseitinless, Sat)
